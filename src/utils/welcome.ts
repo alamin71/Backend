@@ -12,11 +12,26 @@ export const welcome = () => {
     greeting = 'Good evening. Welcome to the No-Shorts backend.';
   }
 
+  // timezone-aware formatted date (use TIMEZONE from env or default to Asia/Dhaka)
+  const timeZone = process.env.TIMEZONE || 'Asia/Dhaka';
+  const formattedDate = date.toLocaleString('en-GB', {
+    timeZone,
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'short',
+  });
+
   return `
       <div style="text-align:center; font-family: 'Verdana', sans-serif; color:#2F4F4F; padding: 40px 20px; border-radius: 8px; box-shadow: 0 0 12px rgba(0, 0, 0, 0.06); max-width: 900px; margin: 20px auto; animation: fadeIn 1s;">
         <h1 style="font-size: 40px; color: #2E8B57; margin-bottom: 6px;">No-Shorts Backend</h1>
         <p style="font-size: 20px; color: #333; margin-top: 0;">${greeting}</p>
-        <p style="font-size: 16px; color: #555;">Current date and time: <strong style="color: #2E8B57;">${date}</strong></p>
+          <p style="font-size: 16px; color: #555;">Current date and time: <strong style="color: #2E8B57;">${formattedDate}</strong></p>
 
         <div style="margin-top: 24px; text-align:left; display:inline-block; max-width:680px; width:100%;">
           <h3 style="font-size:18px; color:#333; margin-bottom:6px;">Status</h3>
