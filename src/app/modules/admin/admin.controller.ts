@@ -22,7 +22,7 @@ const createAdmin = catchAsync(async (req: Request, res: Response) => {
 });
 
 const deleteAdmin = catchAsync(async (req: Request, res: Response) => {
-  const payload = req.params.id;
+  const payload = req.params.id as string;
   const result = await AdminService.deleteAdminFromDB(payload);
 
   sendResponse(res, {
