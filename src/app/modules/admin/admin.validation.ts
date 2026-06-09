@@ -37,7 +37,11 @@ const createVerifyResetOtpZodSchema = z.object({
   body: z.object({
     otp: z.preprocess(
       (val) => Number(val),
-      z.number().int().nonnegative({ message: 'OTP is required' })
+      z
+        .number()
+        .int()
+        .min(100000, { message: 'OTP must be 6 digits' })
+        .max(999999, { message: 'OTP must be 6 digits' })
     ),
   }),
 });
@@ -83,7 +87,11 @@ const verifyEmailChangeOtpZodSchema = z.object({
   body: z.object({
     otp: z.preprocess(
       (val) => Number(val),
-      z.number().int().nonnegative({ message: 'OTP is required' })
+      z
+        .number()
+        .int()
+        .min(100000, { message: 'OTP must be 6 digits' })
+        .max(999999, { message: 'OTP must be 6 digits' })
     ),
   }),
 });

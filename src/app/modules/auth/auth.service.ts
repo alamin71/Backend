@@ -176,7 +176,7 @@ const signupUserToDB = async (payload: { email: string; password: string }) => {
 
   // If user exists but not verified, resend OTP automatically
   if (existing && !existing.verified) {
-    const otp = generateOTP(4);
+    const otp = generateOTP(6);
     const values = { name: existing.name || generatedName, otp, email } as {
       name: string;
       otp: string;
@@ -203,7 +203,7 @@ const signupUserToDB = async (payload: { email: string; password: string }) => {
 
   await User.create({ name: generatedName, email, password });
 
-  const otp = generateOTP(4);
+  const otp = generateOTP(6);
   const values = { name: generatedName, otp, email } as {
     name: string;
     otp: string;
@@ -236,7 +236,7 @@ const forgetPasswordToDB = async (email: string) => {
   }
 
   //send mail
-  const otp = generateOTP(4);
+  const otp = generateOTP(6);
   const value = { otp, email: isExistUser.email };
   const forgetPassword = emailTemplate.resetPassword(value);
   emailHelper.sendEmail(forgetPassword);
@@ -286,7 +286,7 @@ const resendOtpFromDb = async (
   }
 
   // send email
-  const otp = generateOTP(4);
+  const otp = generateOTP(6);
   const values = {
     name: isExistUser.name,
     otp: otp,

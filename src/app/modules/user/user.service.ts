@@ -22,7 +22,7 @@ const createUserToDB = async (payload: IUser): Promise<IUser> => {
   }
 
   //send email
-  const otp = generateOTP(4);
+  const otp = generateOTP(6);
   const values = {
     name: createUser.name,
     otp: otp,
