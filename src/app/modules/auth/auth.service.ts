@@ -65,13 +65,88 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new AppError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
   }
 
+  // Every login requires OTP verification
+  const otp = generateOTP(6);
+  const loginOtpMail = emailTemplate.resetPassword({
+    otp,
+    email: isExistUser.email,
+    audience: 'user',
+  });
+  emailHelper.sendEmail(loginOtpMail);
+
+  await User.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        authentication: {
+          isResetPassword: false,
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + 5 * 60000),
+        },
+      },
+    }
+  );
+
+  const otpToken = jwtHelper.createToken(
+    { email: isExistUser.email, purpose: 'login' },
+    config.jwt.jwt_secret as Secret,
+    '10m'
+  );
+
+  return { otp, otpToken };
+};
+
+const verifyLoginOtpToDB = async (payload: IVerifyEmail) => {
+  const { email, oneTimeCode } = payload;
+
+  const isExistUser = await User.findOne({ email }).select('+authentication');
+  if (!isExistUser) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  if (!isExistUser.verified) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      'Please verify your account first'
+    );
+  }
+
+  if (isExistUser.status !== 'active') {
+    throw new AppError(StatusCodes.FORBIDDEN, 'User account is not active');
+  }
+
+  const dbOtp = String(isExistUser.authentication?.oneTimeCode);
+  const requestOtp = String(oneTimeCode);
+
+  if (dbOtp !== requestOtp) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'You provided wrong otp');
+  }
+
+  const expireAt = isExistUser.authentication?.expireAt;
+  if (!expireAt || new Date() > expireAt) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      'Otp already expired, Please try again'
+    );
+  }
+
+  await User.findByIdAndUpdate(isExistUser._id, {
+    $set: {
+      authentication: {
+        isResetPassword: false,
+        oneTimeCode: null,
+        expireAt: null,
+      },
+    },
+  });
+
   const jwtData = {
     id: isExistUser._id,
     role: isExistUser.role,
     email: isExistUser.email,
     name: isExistUser.name,
   };
-  //create token
+
   const accessToken = jwtHelper.createToken(
     jwtData,
     config.jwt.jwt_secret as Secret,
@@ -87,12 +162,9 @@ const loginUserFromDB = async (payload: ILoginData) => {
 };
 
 // signup
-const signupUserToDB = async (payload: {
-  name: string;
-  email: string;
-  password: string;
-}) => {
-  const { name, email, password } = payload;
+const signupUserToDB = async (payload: { email: string; password: string }) => {
+  const { email, password } = payload;
+  const generatedName = email.split('@')[0] || 'User';
 
   const existing = await User.findOne({ email });
   if (existing && existing.verified) {
@@ -105,7 +177,7 @@ const signupUserToDB = async (payload: {
   // If user exists but not verified, resend OTP automatically
   if (existing && !existing.verified) {
     const otp = generateOTP(4);
-    const values = { name: existing.name, otp, email } as {
+    const values = { name: existing.name || generatedName, otp, email } as {
       name: string;
       otp: string;
       email: string;
@@ -129,10 +201,10 @@ const signupUserToDB = async (payload: {
     return { otp, signupToken };
   }
 
-  await User.create({ name, email, password });
+  await User.create({ name: generatedName, email, password });
 
   const otp = generateOTP(4);
-  const values = { name, otp, email } as {
+  const values = { name: generatedName, otp, email } as {
     name: string;
     otp: string;
     email: string;
@@ -555,6 +627,7 @@ const refreshToken = async (token: string) => {
 };
 export const AuthService = {
   verifyEmailToDB,
+  verifyLoginOtpToDB,
   loginUserFromDB,
   signupUserToDB,
   forgetPasswordToDB,

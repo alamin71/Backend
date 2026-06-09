@@ -9,7 +9,6 @@ const otpBodySchema = z.object({
 
 const createSignupZodSchema = z.object({
   body: z.object({
-    name: z.string().nonempty({ message: 'Name is required' }),
     email: z.string().email({ message: 'Invalid email address' }),
     password: z
       .string()

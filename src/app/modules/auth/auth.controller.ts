@@ -71,11 +71,58 @@ const loginUser = catchAsync(async (req, res) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'User logged in successfully.',
+    message: result?.otp
+      ? `Login OTP sent. [DEV: ${result.otp}]`
+      : 'Login OTP sent to your email.',
     data: {
-      accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
+      otpToken: result.otpToken,
     },
+  });
+});
+
+const verifyLoginOtp = catchAsync(async (req, res) => {
+  const { otp } = req.body;
+  const loginToken =
+    (req.headers['login-token'] as string) ||
+    (req.headers['otp-token'] as string) ||
+    ((req.headers.authorization as string)?.split(' ')[1] as string);
+
+  if (!loginToken) {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Login token is required');
+  }
+
+  let decoded;
+  try {
+    decoded = jwtHelper.verifyToken(
+      loginToken,
+      config.jwt.jwt_secret as Secret
+    );
+  } catch (error) {
+    throw new AppError(
+      StatusCodes.UNAUTHORIZED,
+      'Invalid or expired login token'
+    );
+  }
+
+  if (decoded?.purpose !== 'login') {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid login token payload');
+  }
+
+  const email = decoded?.email as string | undefined;
+  if (!email) {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid login token payload');
+  }
+
+  const result = await AuthService.verifyLoginOtpToDB({
+    email,
+    oneTimeCode: Number(otp),
+  });
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User logged in successfully.',
+    data: result,
   });
 });
 
@@ -231,4 +278,5 @@ export const AuthController = {
   resendOtp,
   refreshToken,
   guestLogin,
+  verifyLoginOtp,
 };

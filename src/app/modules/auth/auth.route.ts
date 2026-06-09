@@ -17,6 +17,11 @@ router.post(
   validateRequest(AuthValidation.createLoginZodSchema),
   AuthController.loginUser
 );
+router.post(
+  '/verify-login-otp',
+  validateRequest(AuthValidation.createVerifyOtpZodSchema),
+  AuthController.verifyLoginOtp
+);
 router.post('/refresh-token', AuthController.refreshToken);
 router.post(
   '/guest',
