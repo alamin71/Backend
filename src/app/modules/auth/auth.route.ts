@@ -19,6 +19,11 @@ router.post(
 );
 router.post('/refresh-token', AuthController.refreshToken);
 router.post(
+  '/guest',
+  validateRequest(AuthValidation.createGuestLoginZodSchema),
+  AuthController.guestLogin
+);
+router.post(
   '/forgot-password',
   validateRequest(AuthValidation.createForgetPasswordZodSchema),
   AuthController.forgetPassword

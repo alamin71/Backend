@@ -69,4 +69,9 @@ export const AuthValidation = {
   createResetPasswordZodSchema,
   createChangePasswordZodSchema,
   createVerifyOtpZodSchema,
+  createGuestLoginZodSchema: z.object({
+    body: z.object({
+      deviceId: z.string().nonempty({ message: 'Device ID is required' }),
+    }),
+  }),
 };

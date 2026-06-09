@@ -4,6 +4,7 @@ import { Secret } from 'jsonwebtoken';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { AuthService } from './auth.service';
+import { USER_ROLES } from '../../../enums/user';
 import config from '../../../config';
 import AppError from '../../../errors/AppError';
 import { jwtHelper } from '../../../helpers/jwtHelper';
@@ -206,6 +207,18 @@ const refreshToken = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+const guestLogin = catchAsync(async (req, res) => {
+  const { deviceId } = req.body;
+  const result = await AuthService.guestLoginToDB({ deviceId });
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Guest login successful',
+    data: result,
+  });
+});
 export const AuthController = {
   signupUser,
   loginUser,
@@ -217,4 +230,5 @@ export const AuthController = {
   // resetPasswordByUrl,   // URL-based (commented for future use)
   resendOtp,
   refreshToken,
+  guestLogin,
 };

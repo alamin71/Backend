@@ -13,6 +13,8 @@ import {
 } from '../../../types/auth';
 import { ResetToken } from '../resetToken/resetToken.model';
 import { User } from '../user/user.model';
+import { Guest } from '../guest/guest.model';
+import { USER_ROLES } from '../../../enums/user';
 import AppError from '../../../errors/AppError';
 import generateOTP from '../../../utils/generateOTP';
 import cryptoToken from '../../../utils/cryptoToken';
@@ -562,4 +564,35 @@ export const AuthService = {
   resetPasswordByUrl,
   resendOtpFromDb,
   refreshToken,
+  guestLoginToDB: async (payload: { deviceId: string }) => {
+    const { deviceId } = payload;
+    if (!deviceId) {
+      throw new AppError(StatusCodes.BAD_REQUEST, 'Device ID is required');
+    }
+
+    // find or create guest
+    let guest = await Guest.findOne({ deviceId });
+    if (!guest) {
+      guest = await Guest.create({ deviceId });
+    }
+
+    const jwtData = {
+      id: guest._id,
+      role: USER_ROLES.GUEST,
+      deviceId: guest.deviceId,
+    } as any;
+
+    const accessToken = jwtHelper.createToken(
+      jwtData,
+      config.jwt.jwt_secret as Secret,
+      config.jwt.jwt_expire_in as string
+    );
+    const refreshToken = jwtHelper.createToken(
+      jwtData,
+      config.jwt.jwt_refresh_secret as Secret,
+      config.jwt.jwt_refresh_expire_in as string
+    );
+
+    return { accessToken, refreshToken, guest };
+  },
 };
