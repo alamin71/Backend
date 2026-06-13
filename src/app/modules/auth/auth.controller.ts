@@ -1,282 +1,167 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { Secret } from 'jsonwebtoken';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { AuthService } from './auth.service';
-import { USER_ROLES } from '../../../enums/user';
-import config from '../../../config';
-import AppError from '../../../errors/AppError';
-import { jwtHelper } from '../../../helpers/jwtHelper';
 
-const extractEmailFromOtpToken = (req: Request) => {
-  const otpToken =
-    (req.headers['otp-token'] as string) ||
-    (req.headers['signup-token'] as string) ||
-    ((req.headers.authorization as string)?.split(' ')[1] as string);
-
-  if (!otpToken) {
-    throw new AppError(StatusCodes.UNAUTHORIZED, 'OTP token is required');
-  }
-
-  let decoded;
-  try {
-    decoded = jwtHelper.verifyToken(otpToken, config.jwt.jwt_secret as Secret);
-  } catch (error) {
-    throw new AppError(
-      StatusCodes.UNAUTHORIZED,
-      'Invalid or expired OTP token'
-    );
-  }
-
-  const email = decoded?.email as string | undefined;
-  if (!email) {
-    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid OTP token payload');
-  }
-
-  return email;
-};
-
-const signupUser = catchAsync(async (req, res) => {
-  const payload = req.body;
-  const result = await AuthService.signupUserToDB(payload);
-
+const signupUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.signupUserToDB(req.body);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: result?.otp
-      ? `Signup OTP sent. [DEV: ${result.otp}]`
-      : 'Signup OTP sent to your email. Please verify to activate your account.',
+    success: true,
+    message: 'OTP sent to your email. Please verify to complete signup.',
     data: result,
   });
 });
 
-const loginUser = catchAsync(async (req, res) => {
-  const { ...loginData } = req.body;
-  const result = await AuthService.loginUserFromDB(loginData);
-  const cookieOptions: {
-    secure: boolean;
-    httpOnly: boolean;
-    maxAge: number;
-    sameSite?: 'none' | 'lax' | 'strict';
-  } = {
-    secure: false,
-    httpOnly: true,
-    maxAge: 31536000000,
-  };
-
-  if (config.node_env === 'production') {
-    cookieOptions.sameSite = 'none';
-  }
+const loginUser = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.loginUserFromDB(req.body);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: result?.otp
-      ? `Login OTP sent. [DEV: ${result.otp}]`
-      : 'Login OTP sent to your email.',
-    data: {
-      otpToken: result.otpToken,
-    },
-  });
-});
-
-const verifyLoginOtp = catchAsync(async (req, res) => {
-  const { otp } = req.body;
-  const loginToken =
-    (req.headers['login-token'] as string) ||
-    (req.headers['otp-token'] as string) ||
-    ((req.headers.authorization as string)?.split(' ')[1] as string);
-
-  if (!loginToken) {
-    throw new AppError(StatusCodes.UNAUTHORIZED, 'Login token is required');
-  }
-
-  let decoded;
-  try {
-    decoded = jwtHelper.verifyToken(
-      loginToken,
-      config.jwt.jwt_secret as Secret
-    );
-  } catch (error) {
-    throw new AppError(
-      StatusCodes.UNAUTHORIZED,
-      'Invalid or expired login token'
-    );
-  }
-
-  if (decoded?.purpose !== 'login') {
-    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid login token payload');
-  }
-
-  const email = decoded?.email as string | undefined;
-  if (!email) {
-    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid login token payload');
-  }
-
-  const result = await AuthService.verifyLoginOtpToDB({
-    email,
-    oneTimeCode: Number(otp),
-  });
-
-  sendResponse(res, {
     success: true,
-    statusCode: StatusCodes.OK,
-    message: 'User logged in successfully.',
+    message: 'OTP sent to your email. Please verify to login.',
     data: result,
   });
 });
 
-const forgetPassword = catchAsync(async (req, res) => {
-  const email = req.body.email;
-  const result = await AuthService.forgetPasswordToDB(email);
-
+const verifyLoginOtp = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.verifyLoginOtpToDB(req.body);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: result?.otp
-      ? `OTP sent to email. [DEV: ${result.otp}]`
-      : 'Please check your email. We have sent you a one-time passcode (OTP).',
-    data: result,
-  });
-});
-const forgetPasswordByUrl = catchAsync(async (req, res) => {
-  const email = req.body.email;
-
-  // Call the service function
-  await AuthService.forgetPasswordByUrlToDB(email);
-
-  sendResponse(res, {
     success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Please check your email. We have sent you a password reset link.',
-    data: {},
-  });
-});
-
-const resetPasswordByUrl = catchAsync(async (req, res) => {
-  let token = req?.headers?.authorization?.split(' ')[1];
-  const { ...resetData } = req.body;
-
-  const result = await AuthService.resetPasswordByUrl(token!, resetData);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Your password has been successfully reset.',
-    data: result,
-  });
-});
-const resetPassword = catchAsync(async (req, res) => {
-  const token = req.headers['reset-token'] as string;
-  const { ...resetData } = req.body;
-  const result = await AuthService.resetPasswordToDB(token!, resetData);
-
-  sendResponse(res, {
-    success: true,
-    statusCode: StatusCodes.OK,
-    message: 'Your password has been successfully reset.',
+    message: 'Login successful.',
     data: result,
   });
 });
 
-const changePassword = catchAsync(async (req, res) => {
-  const user = req.user;
-  const { ...passwordData } = req.body;
-  const result = await AuthService.changePasswordToDB(user, passwordData);
-
+const verifyOtp = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.verifyEmailToDB(req.body);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: 'Your password has been successfully changed',
-    data: result,
-  });
-});
-
-// verify OTP
-const verifyOtp = catchAsync(async (req, res) => {
-  const { otp } = req.body;
-  const email = extractEmailFromOtpToken(req);
-
-  const result = await AuthService.verifyEmailToDB({
-    email,
-    oneTimeCode: Number(otp),
-  });
-
-  // Format response based on context (signup vs reset)
-  const responseData = result.verifyToken
-    ? { resetToken: result.verifyToken }
-    : { user: result.user };
-
-  sendResponse(res, {
     success: true,
-    statusCode: StatusCodes.OK,
     message: result.message,
-    data: responseData,
+    data: result,
   });
 });
 
-// resend Otp
-const resendOtp = catchAsync(async (req, res) => {
-  const signupToken = req.headers['signup-token'] as string;
+const forgetPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.forgetPasswordToDB(req.body.email);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'OTP sent to your email for password reset.',
+    data: result,
+  });
+});
+
+const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1] as string;
+  const result = await AuthService.resetPasswordToDB(token, req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset successful.',
+    data: result,
+  });
+});
+
+const forgetPasswordByUrl = catchAsync(async (req: Request, res: Response) => {
+  await AuthService.forgetPasswordByUrlToDB(req.body.email);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset link sent to your email.',
+    data: null,
+  });
+});
+
+const resetPasswordByUrl = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(' ')[1] as string;
+  const result = await AuthService.resetPasswordByUrl(token, req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password reset successful.',
+    data: result,
+  });
+});
+
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.changePasswordToDB(req.user, req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Password changed successfully.',
+    data: result,
+  });
+});
+
+const resendOtp = catchAsync(async (req: Request, res: Response) => {
   const { email } = req.body;
-
-  if (!signupToken && !email) {
-    throw new AppError(
-      StatusCodes.BAD_REQUEST,
-      'Email is required when signup-token is not provided'
-    );
-  }
-
-  // Use token if provided, otherwise use email from body
-  const result = signupToken
-    ? await AuthService.resendOtpFromDb(signupToken, true)
-    : await AuthService.resendOtpFromDb(email, false);
-
+  const result = await AuthService.resendOtpFromDb(email);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: result?.otp
-      ? `OTP resent successfully. [DEV: ${result.otp}]`
-      : 'OTP sent successfully again',
+    success: true,
+    message: 'OTP resent to your email.',
     data: result,
   });
 });
 
-// refresh token
-const refreshToken = catchAsync(async (req, res) => {
-  const refreshToken = req.headers?.refreshtoken as string;
-  const result = await AuthService.refreshToken(refreshToken);
-
+const refreshToken = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers['x-refresh-token'] as string;
+  const result = await AuthService.refreshToken(token);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Access token retrieved successfully',
+    message: 'Access token refreshed.',
     data: result,
   });
 });
 
-const guestLogin = catchAsync(async (req, res) => {
-  const { deviceId } = req.body;
-  const result = await AuthService.guestLoginToDB({ deviceId });
-
+const guestLogin = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.guestLoginToDB(req.body);
   sendResponse(res, {
-    success: true,
     statusCode: StatusCodes.OK,
-    message: 'Guest login successful',
+    success: true,
+    message: 'Guest login successful.',
     data: result,
   });
 });
+
+// Passwordless OTP flow
+const sendOtp = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.sendOtpToDB(req.body.email);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'OTP sent to your email.',
+    data: result,
+  });
+});
+
+const verifyOtpLogin = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.verifyOtpLoginToDB(req.body);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Login successful.',
+    data: result,
+  });
+});
+
 export const AuthController = {
   signupUser,
   loginUser,
+  verifyLoginOtp,
+  verifyOtp,
   forgetPassword,
   resetPassword,
+  forgetPasswordByUrl,
+  resetPasswordByUrl,
   changePassword,
-  verifyOtp,
-  // forgetPasswordByUrl,  // URL-based (commented for future use)
-  // resetPasswordByUrl,   // URL-based (commented for future use)
   resendOtp,
   refreshToken,
   guestLogin,
-  verifyLoginOtp,
+  sendOtp,
+  verifyOtpLogin,
 };

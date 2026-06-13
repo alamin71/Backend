@@ -14,7 +14,7 @@ import {
 import { ResetToken } from '../resetToken/resetToken.model';
 import { User } from '../user/user.model';
 import { Guest } from '../guest/guest.model';
-import { USER_ROLES } from '../../../enums/user';
+import { USER_ROLES, USER_STATUS } from '../../../enums/user';
 import AppError from '../../../errors/AppError';
 import generateOTP from '../../../utils/generateOTP';
 import cryptoToken from '../../../utils/cryptoToken';
@@ -625,6 +625,115 @@ const refreshToken = async (token: string) => {
 
   return { accessToken };
 };
+// Passwordless: send OTP to email (creates pending user if not exists)
+const sendOtpToDB = async (email: string) => {
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser?.status === USER_STATUS.BLOCKED) {
+    throw new AppError(
+      StatusCodes.FORBIDDEN,
+      'Your account has been blocked'
+    );
+  }
+
+  const otp = generateOTP(6);
+  const authentication = {
+    oneTimeCode: otp,
+    expireAt: new Date(Date.now() + 5 * 60000),
+  };
+
+  const generatedName = email.split('@')[0] || 'User';
+
+  // Upsert: creates user without password if not exists, updates OTP if exists
+  await User.findOneAndUpdate(
+    { email },
+    {
+      $setOnInsert: {
+        name: generatedName,
+        email,
+        role: USER_ROLES.USER,
+        status: USER_STATUS.ACTIVE,
+        verified: false,
+      },
+      $set: { authentication },
+    },
+    { upsert: true }
+  );
+
+  const emailData = {
+    name: existingUser?.name || generatedName,
+    otp,
+    email,
+  };
+  const template = emailTemplate.createAccount(emailData as any);
+  emailHelper.sendEmail(template);
+
+  const otpToken = jwtHelper.createToken(
+    { email, purpose: 'otp-login' },
+    config.jwt.jwt_secret as Secret,
+    '10m'
+  );
+
+  return { otp, otpToken };
+};
+
+// Passwordless: verify OTP → login existing user OR activate newly created user
+const verifyOtpLoginToDB = async (payload: IVerifyEmail) => {
+  const { email, oneTimeCode } = payload;
+
+  const user = await User.findOne({ email }).select('+authentication');
+  if (!user) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  if (user.status === USER_STATUS.BLOCKED) {
+    throw new AppError(StatusCodes.FORBIDDEN, 'Your account has been blocked');
+  }
+
+  const dbOtp = String(user.authentication?.oneTimeCode);
+  const requestOtp = String(oneTimeCode);
+
+  if (dbOtp !== requestOtp) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'You provided wrong OTP');
+  }
+
+  const expireAt = user.authentication?.expireAt;
+  if (!expireAt || new Date() > expireAt) {
+    throw new AppError(
+      StatusCodes.BAD_REQUEST,
+      'OTP expired, please try again'
+    );
+  }
+
+  // Mark verified (first-time users become verified here) and clear OTP
+  await User.findByIdAndUpdate(user._id, {
+    $set: {
+      verified: true,
+      authentication: { isResetPassword: false, oneTimeCode: null, expireAt: null },
+    },
+  });
+
+  const jwtData = {
+    id: user._id,
+    role: user.role,
+    email: user.email,
+    name: user.name,
+  };
+
+  const accessToken = jwtHelper.createToken(
+    jwtData,
+    config.jwt.jwt_secret as Secret,
+    config.jwt.jwt_expire_in as string
+  );
+  const refreshToken = jwtHelper.createToken(
+    jwtData,
+    config.jwt.jwt_refresh_secret as string,
+    config.jwt.jwt_refresh_expire_in as string
+  );
+
+  return { accessToken, refreshToken };
+};
+
 export const AuthService = {
   verifyEmailToDB,
   verifyLoginOtpToDB,
@@ -637,6 +746,8 @@ export const AuthService = {
   resetPasswordByUrl,
   resendOtpFromDb,
   refreshToken,
+  sendOtpToDB,
+  verifyOtpLoginToDB,
   guestLoginToDB: async (payload: { deviceId: string }) => {
     const { deviceId } = payload;
     if (!deviceId) {

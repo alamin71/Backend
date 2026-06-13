@@ -64,6 +64,26 @@ const createVerifyOtpZodSchema = z.object({
   body: otpBodySchema,
 });
 
+const createSendOtpZodSchema = z.object({
+  body: z.object({
+    email: z.string().email({ message: 'Invalid email address' }),
+  }),
+});
+
+const createVerifyOtpLoginZodSchema = z.object({
+  body: z.object({
+    email: z.string().email({ message: 'Invalid email address' }),
+    oneTimeCode: z.preprocess(
+      (val) => Number(val),
+      z
+        .number()
+        .int()
+        .min(100000, { message: 'OTP must be 6 digits' })
+        .max(999999, { message: 'OTP must be 6 digits' })
+    ),
+  }),
+});
+
 export const AuthValidation = {
   createSignupZodSchema,
   createForgetPasswordZodSchema,
@@ -72,6 +92,8 @@ export const AuthValidation = {
   createResetPasswordZodSchema,
   createChangePasswordZodSchema,
   createVerifyOtpZodSchema,
+  createSendOtpZodSchema,
+  createVerifyOtpLoginZodSchema,
   createGuestLoginZodSchema: z.object({
     body: z.object({
       deviceId: z.string().nonempty({ message: 'Device ID is required' }),

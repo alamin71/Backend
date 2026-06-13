@@ -74,4 +74,17 @@ router.post(
   AuthController.resendOtp
 );
 
+// Passwordless OTP login flow
+router.post(
+  '/send-otp',
+  validateRequest(AuthValidation.createSendOtpZodSchema),
+  AuthController.sendOtp
+);
+
+router.post(
+  '/verify-otp-login',
+  validateRequest(AuthValidation.createVerifyOtpLoginZodSchema),
+  AuthController.verifyOtpLogin
+);
+
 export const AuthRouter = router;
