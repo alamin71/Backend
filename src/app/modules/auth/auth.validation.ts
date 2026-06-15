@@ -14,16 +14,12 @@ const otpBodySchema = z.object({
 const createSignupZodSchema = z.object({
   body: z.object({
     email: z.string().email({ message: 'Invalid email address' }),
-    password: z
-      .string()
-      .min(8, { message: 'Password must be at least 8 characters' }),
   }),
 });
 
 const createLoginZodSchema = z.object({
   body: z.object({
     email: z.string().nonempty({ message: 'Email is required' }),
-    password: z.string().nonempty({ message: 'Password is required' }),
   }),
 });
 
