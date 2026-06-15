@@ -40,10 +40,11 @@ const sendOtpToDB = async (email: string) => {
         role: USER_ROLES.USER,
         status: USER_STATUS.ACTIVE,
         verified: false,
+        isDeleted: false,
       },
       $set: { authentication },
     },
-    { upsert: true }
+    { upsert: true, setDefaultsOnInsert: true }
   );
 
   const emailData = {

@@ -2,8 +2,6 @@ import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
-import config from '../../../config';
-import bcrypt from 'bcrypt';
 import { uploadToS3 } from '../../../helpers/s3Helper';
 import AppError from '../../../errors/AppError';
 const createUser = catchAsync(async (req, res) => {
@@ -67,17 +65,9 @@ const updateProfile = catchAsync(async (req, res) => {
     payload.image = s3Url;
   }
 
-  if ('role' in payload) {
-    delete payload.role;
-  }
-
-  // If password is provided
-  if (payload.password) {
-    payload.password = await bcrypt.hash(
-      payload.password,
-      Number(config.bcrypt_salt_rounds)
-    );
-  }
+  // Protect sensitive fields from being updated via this endpoint
+  const protectedFields = ['role', 'password', 'email', 'verified', 'status', 'isDeleted'];
+  protectedFields.forEach((field) => delete payload[field]);
 
   const result = await UserService.updateProfileToDB(user, payload);
 
