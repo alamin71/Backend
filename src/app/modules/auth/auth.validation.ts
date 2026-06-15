@@ -8,8 +8,7 @@ const createSendOtpZodSchema = z.object({
 
 const createVerifyOtpLoginZodSchema = z.object({
   body: z.object({
-    email: z.string().email({ message: 'Invalid email address' }),
-    oneTimeCode: z.preprocess(
+    otp: z.preprocess(
       (val) => Number(val),
       z
         .number()
