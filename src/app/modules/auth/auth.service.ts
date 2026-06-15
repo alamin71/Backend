@@ -27,6 +27,7 @@ const sendOtpToDB = async (email: string) => {
   };
 
   const generatedName = email.split('@')[0] || 'User';
+  const generatedUserName = email.split('@')[1] || '';
 
   // $setOnInsert only runs on first-time user creation
   await User.findOneAndUpdate(
@@ -34,6 +35,7 @@ const sendOtpToDB = async (email: string) => {
     {
       $setOnInsert: {
         name: generatedName,
+        userName: generatedUserName,
         email,
         role: USER_ROLES.USER,
         status: USER_STATUS.ACTIVE,
@@ -112,7 +114,7 @@ const verifyOtpLoginToDB = async (payload: IVerifyEmail) => {
   );
 
   const userData = await User.findById(user._id).select(
-    'name email role image status verified'
+    'name userName email role image status verified'
   );
 
   return { accessToken, refreshToken, user: userData };
