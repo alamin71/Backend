@@ -111,7 +111,11 @@ const verifyOtpLoginToDB = async (payload: IVerifyEmail) => {
     config.jwt.jwt_refresh_expire_in as string
   );
 
-  return { accessToken, refreshToken };
+  const userData = await User.findById(user._id).select(
+    'name email role image status verified'
+  );
+
+  return { accessToken, refreshToken, user: userData };
 };
 
 // Resend OTP
