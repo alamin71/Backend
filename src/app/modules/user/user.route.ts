@@ -24,6 +24,7 @@ router
     UserController.createUser
   );
 
+router.post('/delete/send-otp', auth(USER_ROLES.USER), UserController.sendDeleteOtp);
 router.delete('/delete', auth(USER_ROLES.USER), UserController.deleteProfile);
 
 export const UserRouter = router;

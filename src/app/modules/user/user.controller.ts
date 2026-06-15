@@ -88,26 +88,28 @@ const updateProfile = catchAsync(async (req, res) => {
     data: result,
   });
 });
-//delete profile
-const deleteProfile = catchAsync(async (req, res) => {
+// Send OTP for account deletion
+const sendDeleteOtp = catchAsync(async (req, res) => {
   const { id } = req.user;
-  const { password } = req.body;
-  const isUserVerified = await UserService.verifyUserPassword(id, password);
-  if (!isUserVerified) {
-    return sendResponse(res, {
-      success: false,
-      statusCode: StatusCodes.UNAUTHORIZED,
-      message: 'Incorrect password. Please try again.',
-    });
-  }
-
-  const result = await UserService.deleteUser(id);
-
+  const result = await UserService.sendDeleteAccountOtpToDB(id);
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: 'Profile deleted successfully',
+    message: 'OTP sent to your email for account deletion.',
     data: result,
+  });
+});
+
+// Delete account with OTP verification
+const deleteProfile = catchAsync(async (req, res) => {
+  const { id } = req.user;
+  const { otp } = req.body;
+  await UserService.deleteUserWithOtpFromDB(id, Number(otp));
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Account deleted successfully.',
+    data: null,
   });
 });
 
@@ -115,5 +117,6 @@ export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
+  sendDeleteOtp,
   deleteProfile,
 };

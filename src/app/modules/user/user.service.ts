@@ -126,22 +126,60 @@ const verifyUserPassword = async (userId: string, password: string) => {
   const isPasswordValid = await User.isMatchPassword(password, userPassword);
   return isPasswordValid;
 };
-const deleteUser = async (id: string) => {
-  const isExistUser = await User.isExistUserById(id);
-  if (!isExistUser) {
-    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+const sendDeleteAccountOtpToDB = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
   }
 
-  await User.findByIdAndUpdate(id, {
-    $set: { isDeleted: true },
+  const otp = generateOTP(6);
+  const authentication = {
+    oneTimeCode: otp,
+    expireAt: new Date(Date.now() + 5 * 60000),
+  };
+
+  await User.findByIdAndUpdate(userId, { $set: { authentication } });
+
+  const emailData = { name: user.name, otp, email: user.email };
+  const template = emailTemplate.createAccount(emailData as any);
+  emailHelper.sendEmail(template);
+
+  return { otp, email: user.email };
+};
+
+const deleteUserWithOtpFromDB = async (
+  userId: string,
+  oneTimeCode: number
+) => {
+  const user = await User.findById(userId).select('+authentication');
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
+  }
+
+  const dbOtp = String(user.authentication?.oneTimeCode);
+  const requestOtp = String(oneTimeCode);
+
+  if (dbOtp !== requestOtp) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'You provided wrong OTP');
+  }
+
+  const expireAt = user.authentication?.expireAt;
+  if (!expireAt || new Date() > expireAt) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'OTP expired, please try again');
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    $set: { isDeleted: true, authentication: { oneTimeCode: null, expireAt: null } },
   });
 
   return true;
 };
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
-  deleteUser,
   verifyUserPassword,
+  sendDeleteAccountOtpToDB,
+  deleteUserWithOtpFromDB,
 };
