@@ -1,10 +1,10 @@
-import { Types } from 'mongoose';
+import bcrypt from 'bcrypt';
 import { StatusCodes } from 'http-status-codes';
+import { JwtPayload, Secret } from 'jsonwebtoken';
 import AppError from '../../../errors/AppError';
 import { IUser } from '../user/user.interface';
 import { User } from '../user/user.model';
-import { JwtPayload } from 'jsonwebtoken';
-import { AuthService } from '../auth/auth.service';
+import { ResetToken } from '../resetToken/resetToken.model';
 import { USER_ROLES } from '../../../enums/user';
 import {
   IAuthResetPassword,
@@ -14,7 +14,10 @@ import {
 } from '../../../types/auth';
 import { emailHelper } from '../../../helpers/emailHelper';
 import { emailTemplate } from '../../../shared/emailTemplate';
+import { jwtHelper } from '../../../helpers/jwtHelper';
+import config from '../../../config';
 import generateOTP from '../../../utils/generateOTP';
+import cryptoToken from '../../../utils/cryptoToken';
 
 const ensureAdminUserByEmail = async (email: string) => {
   const user = await User.findOne({ email });
@@ -95,46 +98,209 @@ const updateAdminProfileInDB = async (
 };
 
 const adminLoginToDB = async (payload: ILoginData) => {
-  await ensureAdminUserByEmail(payload.email);
+  const { email, password } = payload;
+  const isExistUser = await User.findOne({ email }).select('+password');
+  if (!isExistUser) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+  await ensureAdminUserByEmail(email);
 
-  const tokens = await AuthService.loginUserFromDB(payload);
-  const admin = await User.findOne({ email: payload.email }).select(
-    'name userName email role image verified isEmailVerified authProvider status'
+  if (isExistUser.status === 'blocked') {
+    throw new AppError(StatusCodes.FORBIDDEN, 'Your account has been blocked.');
+  }
+
+  if (!(await User.isMatchPassword(password, isExistUser.password))) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
+  }
+
+  const otp = generateOTP(6);
+  const loginOtpMail = emailTemplate.resetPassword({
+    otp,
+    email: isExistUser.email,
+    audience: 'user',
+  });
+  emailHelper.sendEmail(loginOtpMail);
+
+  await User.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        authentication: {
+          isResetPassword: false,
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + 5 * 60000),
+        },
+      },
+    }
   );
 
-  return {
-    ...tokens,
-    admin,
-  };
+  const otpToken = jwtHelper.createToken(
+    { email: isExistUser.email, purpose: 'admin-login' },
+    config.jwt.jwt_secret as Secret,
+    '10m'
+  );
+
+  return { otp, otpToken };
 };
 
 const adminForgetPasswordToDB = async (email: string) => {
   await ensureAdminUserByEmail(email);
-  return AuthService.forgetPasswordToDB(email);
+
+  const otp = generateOTP(6);
+  const value = { otp, email };
+  const forgetPassword = emailTemplate.resetPassword(value);
+  emailHelper.sendEmail(forgetPassword);
+
+  await User.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        authentication: {
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + 5 * 60000),
+        },
+      },
+    }
+  );
+
+  return { otp };
 };
 
 const adminVerifyResetOtpToDB = async (payload: IVerifyEmail) => {
-  await ensureAdminUserByEmail(payload.email);
-  return AuthService.verifyEmailToDB(payload);
+  const { email, oneTimeCode } = payload;
+  await ensureAdminUserByEmail(email);
+
+  const isExistUser = await User.findOne({ email }).select('+authentication');
+  if (!isExistUser) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  const dbOtp = String(isExistUser.authentication?.oneTimeCode);
+  const requestOtp = String(oneTimeCode);
+
+  if (dbOtp !== requestOtp) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'You provided wrong OTP');
+  }
+
+  const expireAt = isExistUser.authentication?.expireAt;
+  if (!expireAt || new Date() > expireAt) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'OTP already expired, please try again');
+  }
+
+  await User.findOneAndUpdate(
+    { _id: isExistUser._id },
+    {
+      authentication: {
+        isResetPassword: true,
+        oneTimeCode: null,
+        expireAt: null,
+      },
+    }
+  );
+
+  const resetToken = cryptoToken();
+  await ResetToken.create({
+    user: isExistUser._id,
+    token: resetToken,
+    expireAt: new Date(Date.now() + 5 * 60000),
+  });
+
+  return {
+    verifyToken: resetToken,
+    message: 'OTP verified successfully. Use the reset token to reset your password.',
+  };
 };
 
 const adminResetPasswordToDB = async (
   token: string,
   payload: IAuthResetPassword
 ) => {
-  return AuthService.resetPasswordToDB(token, payload);
+  const { newPassword, confirmPassword } = payload;
+
+  const isExistToken = await ResetToken.isExistToken(token);
+  if (!isExistToken) {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'You are not authorized');
+  }
+
+  const isExistUser = await User.findById(isExistToken.user).select('+authentication');
+  if (!isExistUser?.authentication?.isResetPassword) {
+    throw new AppError(
+      StatusCodes.UNAUTHORIZED,
+      "You don't have permission to change the password. Please click 'Forgot Password' again."
+    );
+  }
+
+  const isValid = await ResetToken.isExpireToken(token);
+  if (!isValid) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Token expired, please request a new one');
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "New password and Confirm password don't match!");
+  }
+
+  const hashPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
+
+  await User.findOneAndUpdate(
+    { _id: isExistToken.user },
+    { password: hashPassword, authentication: { isResetPassword: false } },
+    { new: true }
+  );
 };
 
 const adminResendOtpToDB = async (email: string) => {
   await ensureAdminUserByEmail(email);
-  return AuthService.resendOtpFromDb(email, false);
+
+  const otp = generateOTP(6);
+  const value = { otp, email };
+  const mail = emailTemplate.resetPassword(value);
+  emailHelper.sendEmail(mail);
+
+  await User.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        authentication: {
+          oneTimeCode: otp,
+          expireAt: new Date(Date.now() + 5 * 60000),
+        },
+      },
+    }
+  );
+
+  const otpToken = jwtHelper.createToken(
+    { email },
+    config.jwt.jwt_secret as Secret,
+    '10m'
+  );
+
+  return { otp, otpToken };
 };
 
 const changePasswordForAdminInDB = async (
   admin: JwtPayload,
   payload: IChangePassword
 ) => {
-  return AuthService.changePasswordToDB(admin, payload);
+  const { currentPassword, newPassword, confirmPassword } = payload;
+  const isExistUser = await User.findById(admin.id).select('+password');
+  if (!isExistUser) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  if (!(await User.isMatchPassword(currentPassword, isExistUser.password))) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Current password is incorrect');
+  }
+
+  if (currentPassword === newPassword) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'New password must differ from current password');
+  }
+
+  if (newPassword !== confirmPassword) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "New password and Confirm password don't match");
+  }
+
+  const hashPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
+  await User.findOneAndUpdate({ _id: admin.id }, { password: hashPassword }, { new: true });
 };
 const removeProfilePhotoFromDB = async (admin: JwtPayload) => {
   const updatedAdmin = await User.findByIdAndUpdate(
