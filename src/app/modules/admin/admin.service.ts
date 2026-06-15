@@ -109,7 +109,7 @@ const adminLoginToDB = async (payload: ILoginData) => {
     throw new AppError(StatusCodes.FORBIDDEN, 'Your account has been blocked.');
   }
 
-  if (!(await User.isMatchPassword(password, isExistUser.password))) {
+  if (!(await User.isMatchPassword(password, isExistUser.password ?? ''))) {
     throw new AppError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
   }
 
@@ -287,7 +287,7 @@ const changePasswordForAdminInDB = async (
     throw new AppError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
-  if (!(await User.isMatchPassword(currentPassword, isExistUser.password))) {
+  if (!isExistUser.password || !(await User.isMatchPassword(currentPassword, isExistUser.password))) {
     throw new AppError(StatusCodes.BAD_REQUEST, 'Current password is incorrect');
   }
 

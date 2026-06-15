@@ -12,6 +12,10 @@ const userSchema = new Schema<IUser, UserModel>(
       type: String,
       required: true,
     },
+    userName: {
+      type: String,
+      default: '',
+    },
     role: {
       type: String,
       enum: Object.values(USER_ROLES),
@@ -25,9 +29,8 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       select: false,
-      minlength: 8,
     },
     image: {
       type: String,
@@ -96,10 +99,10 @@ userSchema.pre('save', async function (next) {
     throw new AppError(StatusCodes.BAD_REQUEST, 'Email already exists!');
   }
 
-  this.password = await bcrypt.hash(
-    this.password,
-    Number(config.bcrypt_salt_rounds)
-  );
+  if (this.password) {
+    const pwd = this.password;
+    this.password = await bcrypt.hash(pwd, Number(config.bcrypt_salt_rounds)) as string;
+  }
   next();
 });
 

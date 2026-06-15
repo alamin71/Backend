@@ -27,7 +27,7 @@ const sendOtpToDB = async (email: string) => {
   };
 
   const generatedName = email.split('@')[0] || 'User';
-  const generatedUserName = email.split('@')[1] || '';
+  const generatedUserName = '@' + (email.split('@')[1] || '');
 
   // $setOnInsert only runs on first-time user creation
   await User.findOneAndUpdate(
