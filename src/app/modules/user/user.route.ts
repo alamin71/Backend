@@ -27,4 +27,18 @@ router
 router.post('/delete/send-otp', auth(USER_ROLES.USER), UserController.sendDeleteOtp);
 router.delete('/delete', auth(USER_ROLES.USER), UserController.deleteProfile);
 
+router.post(
+  '/change-email/send-otp',
+  auth(USER_ROLES.USER),
+  validateRequest(UserValidation.requestEmailChangeZodSchema),
+  UserController.requestEmailChange
+);
+
+router.post(
+  '/change-email/verify-otp',
+  auth(USER_ROLES.USER),
+  validateRequest(UserValidation.verifyEmailChangeOtpZodSchema),
+  UserController.verifyEmailChangeOtp
+);
+
 export const UserRouter = router;

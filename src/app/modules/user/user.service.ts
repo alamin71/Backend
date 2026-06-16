@@ -175,6 +175,85 @@ const deleteUserWithOtpFromDB = async (
   return true;
 };
 
+// Request email change → send OTP to new email
+const requestEmailChangeToDB = async (userId: string, newEmail: string) => {
+  const normalizedEmail = newEmail.trim().toLowerCase();
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
+  }
+
+  if (normalizedEmail === user.email) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'New email cannot be same as current email');
+  }
+
+  const existing = await User.findOne({ email: normalizedEmail });
+  if (existing) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'This email is already in use');
+  }
+
+  const otp = generateOTP(6);
+  const emailChangeTemplate = emailTemplate.emailChangeOtp({
+    name: user.name,
+    otp,
+    newEmail: normalizedEmail,
+  });
+  await emailHelper.sendEmail(emailChangeTemplate);
+
+  await User.findByIdAndUpdate(userId, {
+    authentication: {
+      ...user.authentication,
+      pendingEmail: normalizedEmail,
+      emailChangeOtp: otp,
+      emailChangeExpireAt: new Date(Date.now() + 5 * 60000),
+    },
+  });
+
+  return { otp, message: `OTP sent to ${normalizedEmail}` };
+};
+
+// Verify OTP → update email
+const verifyEmailChangeOtpToDB = async (userId: string, otp: number) => {
+  const user = await User.findById(userId).select('+authentication');
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
+  }
+
+  const auth = user.authentication;
+
+  if (!auth?.pendingEmail) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'No email change request found');
+  }
+
+  if (String(auth.emailChangeOtp) !== String(otp)) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Invalid OTP');
+  }
+
+  const expireAt = auth.emailChangeExpireAt;
+  if (!expireAt || new Date() > expireAt) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'OTP expired, please request again');
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    {
+      email: auth.pendingEmail,
+      authentication: {
+        isResetPassword: false,
+        oneTimeCode: null,
+        expireAt: null,
+        pendingEmail: '',
+        emailChangeOtp: null,
+        emailChangeExpireAt: null,
+      },
+    },
+    { new: true }
+  );
+
+  return { email: updatedUser?.email, message: 'Email changed successfully' };
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -182,4 +261,6 @@ export const UserService = {
   verifyUserPassword,
   sendDeleteAccountOtpToDB,
   deleteUserWithOtpFromDB,
+  requestEmailChangeToDB,
+  verifyEmailChangeOtpToDB,
 };

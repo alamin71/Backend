@@ -28,7 +28,24 @@ const updateUserZodSchema = z.object({
   }),
 });
 
+const requestEmailChangeZodSchema = z.object({
+  body: z.object({
+    newEmail: z.string().email({ message: 'Invalid email address' }),
+  }),
+});
+
+const verifyEmailChangeOtpZodSchema = z.object({
+  body: z.object({
+    otp: z.preprocess(
+      (val) => Number(val),
+      z.number().int().min(100000).max(999999, { message: 'OTP must be 6 digits' })
+    ),
+  }),
+});
+
 export const UserValidation = {
   createUserZodSchema,
   updateUserZodSchema,
+  requestEmailChangeZodSchema,
+  verifyEmailChangeOtpZodSchema,
 };

@@ -103,10 +103,36 @@ const deleteProfile = catchAsync(async (req, res) => {
   });
 });
 
+const requestEmailChange = catchAsync(async (req, res) => {
+  const { id } = req.user;
+  const { newEmail } = req.body;
+  const result = await UserService.requestEmailChangeToDB(id, newEmail);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+    data: { otp: result.otp },
+  });
+});
+
+const verifyEmailChangeOtp = catchAsync(async (req, res) => {
+  const { id } = req.user;
+  const { otp } = req.body;
+  const result = await UserService.verifyEmailChangeOtpToDB(id, Number(otp));
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+    data: { email: result.email },
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
   sendDeleteOtp,
   deleteProfile,
+  requestEmailChange,
+  verifyEmailChangeOtp,
 };
