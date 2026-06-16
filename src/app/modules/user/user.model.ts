@@ -67,6 +67,18 @@ const userSchema = new Schema<IUser, UserModel>(
           type: Date,
           default: null,
         },
+        pendingEmail: {
+          type: String,
+          default: '',
+        },
+        emailChangeOtp: {
+          type: Number,
+          default: null,
+        },
+        emailChangeExpireAt: {
+          type: Date,
+          default: null,
+        },
       },
       select: false,
     },
