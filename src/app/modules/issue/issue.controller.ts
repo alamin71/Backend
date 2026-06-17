@@ -3,11 +3,19 @@ import { Types } from 'mongoose';
 import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import { uploadMultipleToS3 } from '../../../helpers/s3Helper';
+import AppError from '../../../errors/AppError';
 import { IssueService } from './issue.service';
 
 // User: Submit an issue report
 const reportIssue = catchAsync(async (req, res) => {
-  const { subject, description, email } = req.body;
+  const { subject, description, email: bodyEmail } = req.body;
+
+  // Logged-in user → use their account email from JWT
+  // Guest → must provide email in body
+  const resolvedEmail: string = req.user?.email || bodyEmail;
+  if (!resolvedEmail) {
+    throw new AppError(StatusCodes.BAD_REQUEST, 'Email is required');
+  }
 
   // Upload attachments to S3
   const files = req.files as Express.Multer.File[] | undefined;
@@ -24,7 +32,7 @@ const reportIssue = catchAsync(async (req, res) => {
   const result = await IssueService.reportIssueToDB({
     subject,
     description,
-    email,
+    email: resolvedEmail,
     attachments,
     userId,
   });

@@ -4,7 +4,8 @@ const reportIssueZodSchema = z.object({
   body: z.object({
     subject: z.string().trim().min(1, { message: 'Subject is required' }),
     description: z.string().trim().min(1, { message: 'Description is required' }),
-    email: z.string().email({ message: 'Valid email is required' }),
+    // guests must provide email; logged-in users use their account email automatically
+    email: z.string().email({ message: 'Valid email is required' }).optional(),
   }),
 });
 
