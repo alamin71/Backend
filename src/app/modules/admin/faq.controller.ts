@@ -24,7 +24,7 @@ const getAllFaqs = catchAsync(async (req, res) => {
 });
 
 const getFaqById = catchAsync(async (req, res) => {
-  const result = await FaqService.getFaqByIdFromDB(req.params.id);
+  const result = await FaqService.getFaqByIdFromDB(req.params.id as string);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
@@ -34,7 +34,7 @@ const getFaqById = catchAsync(async (req, res) => {
 });
 
 const updateFaq = catchAsync(async (req, res) => {
-  const result = await FaqService.updateFaqInDB(req.params.id, req.body);
+  const result = await FaqService.updateFaqInDB(req.params.id as string, req.body);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
@@ -44,7 +44,7 @@ const updateFaq = catchAsync(async (req, res) => {
 });
 
 const deleteFaq = catchAsync(async (req, res) => {
-  await FaqService.deleteFaqFromDB(req.params.id);
+  await FaqService.deleteFaqFromDB(req.params.id as string);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
