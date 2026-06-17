@@ -1,8 +1,10 @@
 import { StatusCodes } from 'http-status-codes';
-import { JwtPayload } from 'jsonwebtoken';
+import { JwtPayload, Secret } from 'jsonwebtoken';
 import { USER_ROLES } from '../../../enums/user';
 import { emailHelper } from '../../../helpers/emailHelper';
 import { emailTemplate } from '../../../shared/emailTemplate';
+import { jwtHelper } from '../../../helpers/jwtHelper';
+import config from '../../../config';
 import unlinkFile from '../../../shared/unlinkFile';
 import { IUser } from './user.interface';
 import { User } from './user.model';
@@ -147,19 +149,15 @@ const sendDeleteAccountOtpToDB = async (userId: string) => {
   return { otp, email: user.email };
 };
 
-const deleteUserWithOtpFromDB = async (
-  userId: string,
-  oneTimeCode: number
-) => {
+// Step 2: Verify OTP → return deleteToken (identity confirmed, not deleted yet)
+const verifyDeleteOtpFromDB = async (userId: string, oneTimeCode: number) => {
   const user = await User.findById(userId).select('+authentication');
   if (!user) {
     throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
   }
 
   const dbOtp = String(user.authentication?.oneTimeCode);
-  const requestOtp = String(oneTimeCode);
-
-  if (dbOtp !== requestOtp) {
+  if (dbOtp !== String(oneTimeCode)) {
     throw new AppError(StatusCodes.BAD_REQUEST, 'You provided wrong OTP');
   }
 
@@ -168,8 +166,44 @@ const deleteUserWithOtpFromDB = async (
     throw new AppError(StatusCodes.BAD_REQUEST, 'OTP expired, please try again');
   }
 
+  // Clear OTP after verification
   await User.findByIdAndUpdate(userId, {
-    $set: { isDeleted: true, authentication: { oneTimeCode: null, expireAt: null } },
+    $set: { authentication: { oneTimeCode: null, expireAt: null } },
+  });
+
+  // Return short-lived delete token (5 min)
+  const deleteToken = jwtHelper.createToken(
+    { id: userId, purpose: 'delete-account' },
+    config.jwt.jwt_secret as Secret,
+    '5m'
+  );
+
+  return { deleteToken };
+};
+
+// Step 3: Submit reason + delete account (requires deleteToken)
+const deleteUserWithTokenFromDB = async (
+  deleteToken: string,
+  reason?: string
+) => {
+  let decoded;
+  try {
+    decoded = jwtHelper.verifyToken(deleteToken, config.jwt.jwt_secret as Secret);
+  } catch {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid or expired delete token');
+  }
+
+  if (decoded.purpose !== 'delete-account') {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Invalid token purpose');
+  }
+
+  const user = await User.findById(decoded.id);
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
+  }
+
+  await User.findByIdAndUpdate(decoded.id, {
+    $set: { isDeleted: true },
   });
 
   return true;
@@ -260,7 +294,8 @@ export const UserService = {
   updateProfileToDB,
   verifyUserPassword,
   sendDeleteAccountOtpToDB,
-  deleteUserWithOtpFromDB,
+  verifyDeleteOtpFromDB,
+  deleteUserWithTokenFromDB,
   requestEmailChangeToDB,
   verifyEmailChangeOtpToDB,
 };

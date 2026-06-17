@@ -90,11 +90,27 @@ const sendDeleteOtp = catchAsync(async (req, res) => {
   });
 });
 
-// Delete account with OTP verification
-const deleteProfile = catchAsync(async (req, res) => {
+// Step 2: Verify OTP → return deleteToken
+const verifyDeleteOtp = catchAsync(async (req, res) => {
   const { id } = req.user;
   const { otp } = req.body;
-  await UserService.deleteUserWithOtpFromDB(id, Number(otp));
+  const result = await UserService.verifyDeleteOtpFromDB(id, Number(otp));
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'OTP verified. Proceed with account deletion.',
+    data: result,
+  });
+});
+
+// Step 3: Delete account with deleteToken + reason
+const deleteProfile = catchAsync(async (req, res) => {
+  const deleteToken = req.headers['delete-token'] as string;
+  if (!deleteToken) {
+    throw new AppError(StatusCodes.UNAUTHORIZED, 'Delete token is required');
+  }
+  const { reason } = req.body;
+  await UserService.deleteUserWithTokenFromDB(deleteToken, reason);
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
@@ -132,6 +148,7 @@ export const UserController = {
   getUserProfile,
   updateProfile,
   sendDeleteOtp,
+  verifyDeleteOtp,
   deleteProfile,
   requestEmailChange,
   verifyEmailChangeOtp,

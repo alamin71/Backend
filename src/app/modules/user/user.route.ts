@@ -5,6 +5,8 @@ import { UserValidation } from './user.validation';
 import auth from '../../middleware/auth';
 import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
 import validateRequest from '../../middleware/validateRequest';
+import { PolicyPageController } from '../admin/policy-page.controller';
+import { PolicyPageValidation } from '../admin/policy-page.validation';
 const router = express.Router();
 
 router
@@ -25,7 +27,17 @@ router
   );
 
 router.post('/delete/send-otp', auth(USER_ROLES.USER), UserController.sendDeleteOtp);
-router.delete('/delete', auth(USER_ROLES.USER), UserController.deleteProfile);
+router.post(
+  '/delete/verify-otp',
+  auth(USER_ROLES.USER),
+  validateRequest(UserValidation.verifyDeleteOtpZodSchema),
+  UserController.verifyDeleteOtp
+);
+router.delete(
+  '/delete',
+  validateRequest(UserValidation.deleteAccountZodSchema),
+  UserController.deleteProfile
+);
 
 router.post(
   '/change-email/send-otp',
@@ -39,6 +51,14 @@ router.post(
   auth(USER_ROLES.USER),
   validateRequest(UserValidation.verifyEmailChangeOtpZodSchema),
   UserController.verifyEmailChangeOtp
+);
+
+// Policy pages (user-facing, read-only)
+router.get(
+  '/policy/:type',
+  auth(USER_ROLES.USER),
+  validateRequest(PolicyPageValidation.getPolicyPageZodSchema),
+  PolicyPageController.getPolicyPage
 );
 
 export const UserRouter = router;

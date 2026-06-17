@@ -43,9 +43,26 @@ const verifyEmailChangeOtpZodSchema = z.object({
   }),
 });
 
+const verifyDeleteOtpZodSchema = z.object({
+  body: z.object({
+    otp: z.preprocess(
+      (val) => Number(val),
+      z.number().int().min(100000).max(999999, { message: 'OTP must be 6 digits' })
+    ),
+  }),
+});
+
+const deleteAccountZodSchema = z.object({
+  body: z.object({
+    reason: z.string().optional(),
+  }),
+});
+
 export const UserValidation = {
   createUserZodSchema,
   updateUserZodSchema,
   requestEmailChangeZodSchema,
   verifyEmailChangeOtpZodSchema,
+  verifyDeleteOtpZodSchema,
+  deleteAccountZodSchema,
 };
