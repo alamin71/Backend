@@ -7,6 +7,7 @@ import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
 import validateRequest from '../../middleware/validateRequest';
 import { PolicyPageController } from '../admin/policy-page.controller';
 import { PolicyPageValidation } from '../admin/policy-page.validation';
+import { FaqController } from '../admin/faq.controller';
 const router = express.Router();
 
 router
@@ -60,5 +61,9 @@ router.get(
   validateRequest(PolicyPageValidation.getPolicyPageZodSchema),
   PolicyPageController.getPolicyPage
 );
+
+// FAQ (user-facing, read-only)
+router.get('/faq', auth(USER_ROLES.USER), FaqController.getAllFaqs);
+router.get('/faq/:id', auth(USER_ROLES.USER), FaqController.getFaqById);
 
 export const UserRouter = router;

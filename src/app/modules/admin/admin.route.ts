@@ -4,6 +4,8 @@ import { AdminController } from './admin.controller';
 import { AdminValidation } from './admin.validation';
 import { PolicyPageController } from './policy-page.controller';
 import { PolicyPageValidation } from './policy-page.validation';
+import { FaqController } from './faq.controller';
+import { FaqValidation } from './faq.validation';
 import auth from '../../middleware/auth';
 import validateRequest from '../../middleware/validateRequest';
 import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
@@ -130,6 +132,41 @@ router.delete(
   '/:id',
   auth(USER_ROLES.SUPER_ADMIN),
   AdminController.deleteAdmin
+);
+
+//=============================================
+// FAQ
+//=============================================
+router.post(
+  '/faq',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  validateRequest(FaqValidation.createFaqZodSchema),
+  FaqController.createFaq
+);
+
+router.get(
+  '/faq',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FaqController.getAllFaqs
+);
+
+router.get(
+  '/faq/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FaqController.getFaqById
+);
+
+router.patch(
+  '/faq/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  validateRequest(FaqValidation.updateFaqZodSchema),
+  FaqController.updateFaq
+);
+
+router.delete(
+  '/faq/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FaqController.deleteFaq
 );
 
 export const AdminRoutes = router;
