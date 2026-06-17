@@ -54,16 +54,16 @@ router.post(
   UserController.verifyEmailChangeOtp
 );
 
-// Policy pages (user-facing, read-only)
+// Policy pages (user + guest, read-only)
 router.get(
   '/policy/:type',
-  auth(USER_ROLES.USER),
+  auth(USER_ROLES.USER, USER_ROLES.GUEST),
   validateRequest(PolicyPageValidation.getPolicyPageZodSchema),
   PolicyPageController.getPolicyPage
 );
 
-// FAQ (user-facing, read-only)
-router.get('/faq', auth(USER_ROLES.USER), FaqController.getAllFaqs);
-router.get('/faq/:id', auth(USER_ROLES.USER), FaqController.getFaqById);
+// FAQ (user + guest, read-only)
+router.get('/faq', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getAllFaqs);
+router.get('/faq/:id', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getFaqById);
 
 export const UserRouter = router;

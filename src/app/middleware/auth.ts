@@ -5,6 +5,8 @@ import config from "../../config";
 import AppError from "../../errors/AppError";
 import { verifyToken } from "../../utils/verifyToken";
 import { User } from "../modules/user/user.model";
+import { Guest } from "../modules/guest/guest.model";
+import { USER_ROLES } from "../../enums/user";
 
 const auth =
   (...roles: string[]) =>
@@ -36,6 +38,16 @@ const auth =
             StatusCodes.UNAUTHORIZED,
             "You are not authorized !!"
           );
+        }
+
+        // Guest user — verify against Guest collection
+        if (verifyUser.role === USER_ROLES.GUEST) {
+          const guest = await Guest.findById(verifyUser.id);
+          if (!guest) {
+            throw new AppError(StatusCodes.NOT_FOUND, "Guest not found !!");
+          }
+          req.user = verifyUser;
+          return next();
         }
 
         //  user cheak isUserExist or not
