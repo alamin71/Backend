@@ -8,6 +8,9 @@ import validateRequest from '../../middleware/validateRequest';
 import { PolicyPageController } from '../admin/policy-page.controller';
 import { PolicyPageValidation } from '../admin/policy-page.validation';
 import { FaqController } from '../admin/faq.controller';
+import { IssueController } from '../issue/issue.controller';
+import { IssueValidation } from '../issue/issue.validation';
+import { issueUploadHandler } from '../../middleware/issueUploadHandler';
 const router = express.Router();
 
 router
@@ -65,5 +68,14 @@ router.get(
 // FAQ (user + guest, read-only)
 router.get('/faq', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getAllFaqs);
 router.get('/faq/:id', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getFaqById);
+
+// Report an issue (user + guest)
+router.post(
+  '/report-issue',
+  auth(USER_ROLES.USER, USER_ROLES.GUEST),
+  issueUploadHandler.any(),
+  validateRequest(IssueValidation.reportIssueZodSchema),
+  IssueController.reportIssue
+);
 
 export const UserRouter = router;

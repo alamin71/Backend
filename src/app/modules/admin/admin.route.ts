@@ -6,6 +6,8 @@ import { PolicyPageController } from './policy-page.controller';
 import { PolicyPageValidation } from './policy-page.validation';
 import { FaqController } from './faq.controller';
 import { FaqValidation } from './faq.validation';
+import { IssueController } from '../issue/issue.controller';
+import { IssueValidation } from '../issue/issue.validation';
 import auth from '../../middleware/auth';
 import validateRequest from '../../middleware/validateRequest';
 import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
@@ -167,6 +169,34 @@ router.delete(
   '/faq/:id',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
   FaqController.deleteFaq
+);
+
+//=============================================
+// Issues
+//=============================================
+router.get(
+  '/issues',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  IssueController.getAllIssues
+);
+
+router.get(
+  '/issues/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  IssueController.getIssueById
+);
+
+router.patch(
+  '/issues/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  validateRequest(IssueValidation.updateIssueStatusZodSchema),
+  IssueController.updateIssueStatus
+);
+
+router.delete(
+  '/issues/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  IssueController.deleteIssue
 );
 
 export const AdminRoutes = router;
