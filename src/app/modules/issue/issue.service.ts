@@ -46,18 +46,30 @@ const reportIssueToDB = async (
   return issue;
 };
 
-const getAllIssuesFromDB = async (tab?: string) => {
+const getAllIssuesFromDB = async (tab?: string, page = 1, limit = 10) => {
   let filter = {};
 
   if (tab === 'pending') {
-    // "Pending Issues" tab → shows pending + in-progress
     filter = { status: { $in: ['pending', 'in-progress'] } };
   } else if (tab === 'solved') {
     filter = { status: 'solved' };
   }
-  // no tab → return all
 
-  return Issue.find(filter).sort({ createdAt: -1 });
+  const skip = (page - 1) * limit;
+  const [issues, total] = await Promise.all([
+    Issue.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Issue.countDocuments(filter),
+  ]);
+
+  return {
+    issues,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const getIssueByIdFromDB = async (id: string) => {

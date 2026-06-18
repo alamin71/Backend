@@ -69,6 +69,9 @@ router.get(
 router.get('/faq', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getAllFaqs);
 router.get('/faq/:id', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getFaqById);
 
+// Get issues (user + guest, read-only)
+router.get('/issues', auth(USER_ROLES.USER, USER_ROLES.GUEST), IssueController.getAllIssues);
+
 // Report an issue (user + guest)
 router.post(
   '/report-issue',

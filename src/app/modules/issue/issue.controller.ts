@@ -45,15 +45,23 @@ const reportIssue = catchAsync(async (req, res) => {
   });
 });
 
-// Admin: Get all issues (?tab=pending → pending+in-progress, ?tab=solved → solved, no tab → all)
+// GET all issues — used by both user and admin routes
 const getAllIssues = catchAsync(async (req, res) => {
   const tab = req.query.tab as string | undefined;
-  const result = await IssueService.getAllIssuesFromDB(tab);
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const result = await IssueService.getAllIssuesFromDB(tab, page, limit);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: 'Issues retrieved successfully',
-    data: result,
+    data: result.issues,
+    meta: {
+      total: result.pagination.total,
+      page: result.pagination.page,
+      limit: result.pagination.limit,
+      totalPage: result.pagination.totalPages,
+    },
   });
 });
 
