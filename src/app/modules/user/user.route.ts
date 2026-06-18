@@ -11,6 +11,7 @@ import { FaqController } from '../admin/faq.controller';
 import { IssueController } from '../issue/issue.controller';
 import { IssueValidation } from '../issue/issue.validation';
 import { issueUploadHandler } from '../../middleware/issueUploadHandler';
+import { StatsController } from '../stats/stats.controller';
 const router = express.Router();
 
 router
@@ -68,6 +69,9 @@ router.get(
 // FAQ (user + guest, read-only)
 router.get('/faq', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getAllFaqs);
 router.get('/faq/:id', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getFaqById);
+
+// Stats
+router.get('/stats', auth(USER_ROLES.USER, USER_ROLES.GUEST), StatsController.getStats);
 
 // Get issues (user + guest, read-only)
 router.get('/issues', auth(USER_ROLES.USER, USER_ROLES.GUEST), IssueController.getAllIssues);
