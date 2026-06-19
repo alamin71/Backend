@@ -11,6 +11,8 @@ export type IUser = {
   stripeCustomerId: string;
   status: 'active' | 'blocked';
   verified: boolean;
+  userType: 'free' | 'pro';
+  subscriptionExpireAt: Date | null;
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number | null;

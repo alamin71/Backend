@@ -3,6 +3,7 @@ import { UserRouter } from '../app/modules/user/user.route';
 import { AuthRouter } from '../app/modules/auth/auth.route';
 import { AdminRoutes } from '../app/modules/admin/admin.route';
 import { SessionRouter } from '../app/modules/session/session.route';
+import { WebhookRouter } from '../app/modules/webhook/webhook.route';
 
 const router = express.Router();
 const routes = [
@@ -21,6 +22,10 @@ const routes = [
   {
     path: '/admin',
     route: AdminRoutes,
+  },
+  {
+    path: '/webhooks',
+    route: WebhookRouter,
   },
 ];
 

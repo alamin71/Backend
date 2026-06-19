@@ -53,6 +53,15 @@ const userSchema = new Schema<IUser, UserModel>(
       type: String,
       default: '',
     },
+    userType: {
+      type: String,
+      enum: ['free', 'pro'],
+      default: 'free',
+    },
+    subscriptionExpireAt: {
+      type: Date,
+      default: null,
+    },
     authentication: {
       type: {
         isResetPassword: {

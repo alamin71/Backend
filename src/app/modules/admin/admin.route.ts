@@ -9,6 +9,7 @@ import { FaqValidation } from './faq.validation';
 import { IssueController } from '../issue/issue.controller';
 import { IssueValidation } from '../issue/issue.validation';
 import { FeedbackController } from '../feedback/feedback.controller';
+import { DashboardController } from '../dashboard/dashboard.controller';
 import auth from '../../middleware/auth';
 import validateRequest from '../../middleware/validateRequest';
 import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
@@ -52,6 +53,15 @@ router.post(
   '/resend-otp',
   validateRequest(AdminValidation.createResendOtpZodSchema),
   AdminController.adminResendOtp
+);
+
+//=============================================
+// Dashboard
+//=============================================
+router.get(
+  '/dashboard',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  DashboardController.getDashboard
 );
 
 // ============================================
