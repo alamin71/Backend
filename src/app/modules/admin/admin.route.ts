@@ -8,6 +8,7 @@ import { FaqController } from './faq.controller';
 import { FaqValidation } from './faq.validation';
 import { IssueController } from '../issue/issue.controller';
 import { IssueValidation } from '../issue/issue.validation';
+import { FeedbackController } from '../feedback/feedback.controller';
 import auth from '../../middleware/auth';
 import validateRequest from '../../middleware/validateRequest';
 import { s3FileUploadHandler } from '../../middleware/s3FileUploadHandler';
@@ -197,6 +198,21 @@ router.delete(
   '/issues/:id',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
   IssueController.deleteIssue
+);
+
+//=============================================
+// Feedbacks (private: 1-3 stars, admin only)
+//=============================================
+router.get(
+  '/feedbacks',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FeedbackController.getPrivateFeedbacks
+);
+
+router.get(
+  '/feedbacks/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FeedbackController.getFeedbackById
 );
 
 export const AdminRoutes = router;

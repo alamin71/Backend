@@ -12,6 +12,8 @@ import { IssueController } from '../issue/issue.controller';
 import { IssueValidation } from '../issue/issue.validation';
 import { issueUploadHandler } from '../../middleware/issueUploadHandler';
 import { StatsController } from '../stats/stats.controller';
+import { FeedbackController } from '../feedback/feedback.controller';
+import { FeedbackValidation } from '../feedback/feedback.validation';
 const router = express.Router();
 
 router
@@ -58,20 +60,28 @@ router.post(
   UserController.verifyEmailChangeOtp
 );
 
-// Policy pages (user + guest, read-only)
+// Policy pages — public
 router.get(
   '/policy/:type',
-  auth(USER_ROLES.USER, USER_ROLES.GUEST),
   validateRequest(PolicyPageValidation.getPolicyPageZodSchema),
   PolicyPageController.getPolicyPage
 );
 
-// FAQ (user + guest, read-only)
-router.get('/faq', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getAllFaqs);
-router.get('/faq/:id', auth(USER_ROLES.USER, USER_ROLES.GUEST), FaqController.getFaqById);
+// FAQ — public
+router.get('/faq', FaqController.getAllFaqs);
+router.get('/faq/:id', FaqController.getFaqById);
 
 // Stats
 router.get('/stats', auth(USER_ROLES.USER, USER_ROLES.GUEST), StatsController.getStats);
+
+// Feedback — submit (user only) & get public (user + guest)
+router.post(
+  '/feedback',
+  auth(USER_ROLES.USER),
+  validateRequest(FeedbackValidation.submitFeedbackZodSchema),
+  FeedbackController.submitFeedback
+);
+router.get('/feedbacks', auth(USER_ROLES.USER, USER_ROLES.GUEST), FeedbackController.getPublicFeedbacks);
 
 // Get issues (user + guest, read-only)
 router.get('/issues', auth(USER_ROLES.USER, USER_ROLES.GUEST), IssueController.getAllIssues);
