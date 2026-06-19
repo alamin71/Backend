@@ -5,8 +5,8 @@ import { Feedback } from './feedback.model';
 
 const submitFeedbackToDB = async (payload: {
   userId?: string;
+  name: string;
   userName: string;
-  userHandle: string;
   rating: number;
   text?: string;
 }) => {
@@ -15,8 +15,8 @@ const submitFeedbackToDB = async (payload: {
 
   return Feedback.create({
     userId: payload.userId ? new Types.ObjectId(payload.userId) : undefined,
+    name: payload.name,
     userName: payload.userName,
-    userHandle: payload.userHandle,
     rating,
     text: payload.text || '',
     isPublic,

@@ -10,8 +10,8 @@ const submitFeedback = catchAsync(async (req, res) => {
 
   const result = await FeedbackService.submitFeedbackToDB({
     userId,
-    userName: name || 'User',
-    userHandle: userName || '@user',
+    name: name || 'User',
+    userName: userName || '@user',
     rating: Number(rating),
     text,
   });
