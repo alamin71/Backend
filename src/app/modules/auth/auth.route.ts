@@ -1,6 +1,7 @@
 import express from 'express';
 import { AuthController } from './auth.controller';
 import { AuthValidation } from './auth.validation';
+import { SocialAuthController } from './social-auth.controller';
 import validateRequest from '../../middleware/validateRequest';
 
 const router = express.Router();
@@ -30,5 +31,9 @@ router.post(
   validateRequest(AuthValidation.createGuestLoginZodSchema),
   AuthController.guestLogin
 );
+
+// Social auth
+router.post('/google', SocialAuthController.googleSignIn);
+router.post('/apple', SocialAuthController.appleSignIn);
 
 export const AuthRouter = router;

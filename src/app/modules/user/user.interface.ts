@@ -8,6 +8,7 @@ export type IUser = {
   password?: string;
   image?: string;
   isDeleted: boolean;
+  fcmToken?: string;
   stripeCustomerId: string;
   status: 'active' | 'blocked';
   verified: boolean;

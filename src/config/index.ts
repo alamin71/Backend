@@ -37,6 +37,16 @@ export default {
     facebook_client_secret: process.env.FACEBOOK_CLIENT_SECRET,
     callback_url: process.env.GOOGLE_CALLBACK_URL,
   },
+  apple: {
+    client_id: process.env.APPLE_CLIENT_ID,
+    team_id: process.env.APPLE_TEAM_ID,
+    key_id: process.env.APPLE_KEY_ID,
+  },
+  firebase: {
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY,
+  },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID || '',
     authToken: process.env.TWILIO_AUTH_TOKEN || '',

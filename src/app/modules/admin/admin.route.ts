@@ -9,6 +9,7 @@ import { FaqValidation } from './faq.validation';
 import { IssueController } from '../issue/issue.controller';
 import { IssueValidation } from '../issue/issue.validation';
 import { FeedbackController } from '../feedback/feedback.controller';
+import { NotificationController } from '../notification/notification.controller';
 import { DashboardController } from '../dashboard/dashboard.controller';
 import auth from '../../middleware/auth';
 import validateRequest from '../../middleware/validateRequest';
@@ -87,11 +88,6 @@ router.patch(
   AdminController.updateAdminProfile
 );
 
-router.delete(
-  '/:id',
-  auth(USER_ROLES.SUPER_ADMIN),
-  AdminController.deleteAdmin
-);
 router.delete(
   '/profile/photo',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
@@ -183,6 +179,34 @@ router.delete(
 );
 
 //=============================================
+// Notifications (admin send)
+//=============================================
+router.post(
+  '/notifications/send',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  NotificationController.sendToUser
+);
+router.post(
+  '/notifications/broadcast',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  NotificationController.sendToAll
+);
+
+//=============================================
+// Feedbacks (private: 1-3 stars, admin only)
+//=============================================
+router.get(
+  '/feedbacks',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FeedbackController.getPrivateFeedbacks
+);
+router.get(
+  '/feedbacks/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  FeedbackController.getFeedbackById
+);
+
+//=============================================
 // Issues
 //=============================================
 router.get(
@@ -210,19 +234,11 @@ router.delete(
   IssueController.deleteIssue
 );
 
-//=============================================
-// Feedbacks (private: 1-3 stars, admin only)
-//=============================================
-router.get(
-  '/feedbacks',
-  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  FeedbackController.getPrivateFeedbacks
-);
-
-router.get(
-  '/feedbacks/:id',
-  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  FeedbackController.getFeedbackById
+// Admin management delete — MUST come after all specific routes
+router.delete(
+  '/:id',
+  auth(USER_ROLES.SUPER_ADMIN),
+  AdminController.deleteAdmin
 );
 
 export const AdminRoutes = router;

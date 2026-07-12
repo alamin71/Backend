@@ -14,6 +14,7 @@ import { issueUploadHandler } from '../../middleware/issueUploadHandler';
 import { StatsController } from '../stats/stats.controller';
 import { FeedbackController } from '../feedback/feedback.controller';
 import { FeedbackValidation } from '../feedback/feedback.validation';
+import { NotificationController } from '../notification/notification.controller';
 const router = express.Router();
 
 router
@@ -74,14 +75,20 @@ router.get('/faq/:id', FaqController.getFaqById);
 // Stats
 router.get('/stats', auth(USER_ROLES.USER, USER_ROLES.GUEST), StatsController.getStats);
 
-// Feedback — submit (user only) & get public (user + guest)
+// Notifications
+router.post('/notification/register-token', auth(USER_ROLES.USER), NotificationController.registerFcmToken);
+router.get('/notifications', auth(USER_ROLES.USER), NotificationController.getMyNotifications);
+router.patch('/notifications/:id/read', auth(USER_ROLES.USER), NotificationController.markAsRead);
+router.patch('/notifications/read-all', auth(USER_ROLES.USER), NotificationController.markAllAsRead);
+
+// Feedback — submit (user/guest) + public view (4-5 star, no auth required)
 router.post(
   '/feedback',
-  auth(USER_ROLES.USER),
+  auth(USER_ROLES.USER, USER_ROLES.GUEST),
   validateRequest(FeedbackValidation.submitFeedbackZodSchema),
   FeedbackController.submitFeedback
 );
-router.get('/feedbacks', auth(USER_ROLES.USER, USER_ROLES.GUEST), FeedbackController.getPublicFeedbacks);
+router.get('/feedbacks', FeedbackController.getPublicFeedbacks);
 
 // Get issues (user + guest, read-only)
 router.get('/issues', auth(USER_ROLES.USER, USER_ROLES.GUEST), IssueController.getAllIssues);
