@@ -78,8 +78,10 @@ export const getDashboardStats = async (params: {
     freeCount,
     guestCount,
     totalUserCount,
+    totalSignups,
     appUsageRows,
     clipData,
+    osStats,
   ] = await Promise.all([
 
     // 1. Platform summary — all time totals
@@ -118,7 +120,10 @@ export const getDashboardStats = async (params: {
     // 6. Total users (pro + free)
     User.countDocuments({ isDeleted: { $ne: true }, createdAt: { $gte: userStatsStart } }),
 
-    // 7. App usage summary — daily session count
+    // 7. Total signups all time
+    User.countDocuments({ isDeleted: { $ne: true } }),
+
+    // 8. App usage summary — daily session count
     Session.aggregate([
       { $match: { createdAt: { $gte: appUsageStart } } },
       {
@@ -130,7 +135,7 @@ export const getDashboardStats = async (params: {
       { $sort: { _id: 1 } },
     ]),
 
-    // 8. Clip length stats — grip duration distribution
+    // 9. Clip length stats — grip duration distribution
     Session.aggregate([
       { $match: { createdAt: { $gte: clipStart } } },
       { $unwind: '$grips' },
@@ -146,6 +151,12 @@ export const getDashboardStats = async (params: {
         },
       },
     ]),
+
+    // 10. OS stats
+    User.aggregate([
+      { $match: { isDeleted: { $ne: true }, createdAt: { $gte: userStatsStart } } },
+      { $group: { _id: '$os', count: { $sum: 1 } } },
+    ]),
   ]);
 
   // Platform summary
@@ -155,6 +166,18 @@ export const getDashboardStats = async (params: {
 
   // Clip length
   const cl = clipData[0] ?? { s15: 0, s20: 0, s30: 0, s60: 0, s90: 0, s120: 0 };
+
+  // OS stats
+  const osMap: Record<string, number> = {};
+  osStats.forEach((o: { _id: string; count: number }) => { osMap[o._id] = o.count; });
+
+  // Signup chart — bestDay + peak
+  const signupChart = fillDailyChart(signupRows, signupStart);
+  let bestDay = '';
+  let peak = 0;
+  signupChart.forEach((d) => {
+    if (d.count > peak) { peak = d.count; bestDay = d.day; }
+  });
 
   return {
     platformSummary: {
@@ -166,7 +189,10 @@ export const getDashboardStats = async (params: {
 
     signupOverview: {
       filter: signupFilter,
-      chart: fillDailyChart(signupRows, signupStart),
+      totalSignups,
+      bestDay,
+      peak,
+      chart: signupChart,
     },
 
     usersStats: {
@@ -175,6 +201,12 @@ export const getDashboardStats = async (params: {
       proUser: proCount,
       freeUser: freeCount,
       guestUser: guestCount,
+    },
+
+    osStats: {
+      filter: userStatsFilter,
+      ios: osMap['ios'] ?? 0,
+      android: osMap['android'] ?? 0,
     },
 
     appUsageSummary: {

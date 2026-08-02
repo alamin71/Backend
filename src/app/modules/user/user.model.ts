@@ -53,6 +53,15 @@ const userSchema = new Schema<IUser, UserModel>(
       type: String,
       default: '',
     },
+    os: {
+      type: String,
+      enum: ['ios', 'android', ''],
+      default: '',
+    },
+    lastSeen: {
+      type: Date,
+      default: null,
+    },
     stripeCustomerId: {
       type: String,
       default: '',

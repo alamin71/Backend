@@ -8,6 +8,7 @@ const submitFeedbackZodSchema = z.object({
         z.number().int().min(1).max(5, { message: 'Rating must be between 1 and 5' })
       ),
       text: z.string().trim().optional(),
+      platform: z.enum(['ios', 'android']).optional(),
     })
     .superRefine((data, ctx) => {
       if (data.rating <= 3 && (!data.text || data.text.trim().length === 0)) {

@@ -7,8 +7,10 @@ const submitFeedbackToDB = async (payload: {
   userId?: string;
   name: string;
   userName: string;
+  email?: string;
   rating: number;
   text?: string;
+  platform?: string;
 }) => {
   const { rating } = payload;
   const isPublic = rating >= 4;
@@ -17,27 +19,39 @@ const submitFeedbackToDB = async (payload: {
     userId: payload.userId ? new Types.ObjectId(payload.userId) : undefined,
     name: payload.name,
     userName: payload.userName,
+    email: payload.email || '',
     rating,
     text: payload.text || '',
+    platform: payload.platform || '',
     isPublic,
   });
 };
 
-// Admin: get private feedbacks (1-3 stars), optional filter by star
-const getPrivateFeedbacksFromDB = async (star?: number, page = 1, limit = 10) => {
+// Admin: get private feedbacks (1-3 stars), optional filter by star + platform
+const getPrivateFeedbacksFromDB = async (
+  star?: number,
+  platform?: string,
+  page = 1,
+  limit = 10
+) => {
   const filter: Record<string, any> = { isPublic: false };
-  if (star && [1, 2, 3].includes(star)) {
-    filter.rating = star;
-  }
+  if (star && [1, 2, 3].includes(star)) filter.rating = star;
+  if (platform && ['ios', 'android'].includes(platform)) filter.platform = platform;
 
+  const baseFilter = { isPublic: false };
   const skip = (page - 1) * limit;
-  const [feedbacks, total] = await Promise.all([
+
+  const [feedbacks, total, totalAll, androidCount, iosCount] = await Promise.all([
     Feedback.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
     Feedback.countDocuments(filter),
+    Feedback.countDocuments(baseFilter),
+    Feedback.countDocuments({ ...baseFilter, platform: 'android' }),
+    Feedback.countDocuments({ ...baseFilter, platform: 'ios' }),
   ]);
 
   return {
     feedbacks,
+    stats: { total: totalAll, android: androidCount, ios: iosCount },
     pagination: { total, page, limit, totalPage: Math.ceil(total / limit) },
   };
 };

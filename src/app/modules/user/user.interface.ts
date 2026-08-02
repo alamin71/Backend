@@ -13,6 +13,8 @@ export type IUser = {
   status: 'active' | 'blocked';
   verified: boolean;
   userType: 'free' | 'pro';
+  os?: 'ios' | 'android' | '';
+  lastSeen?: Date | null;
   subscriptionExpireAt: Date | null;
   authentication?: {
     isResetPassword: boolean;

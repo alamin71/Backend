@@ -46,18 +46,24 @@ const reportIssueToDB = async (
   return issue;
 };
 
-const getAllIssuesFromDB = async (tab?: string, page = 1, limit = 10) => {
-  let filter = {};
+const getAllIssuesFromDB = async (status?: string, page = 1, limit = 10) => {
+  let filter: Record<string, any> = {};
 
-  if (tab === 'pending') {
-    filter = { status: { $in: ['pending', 'in-progress'] } };
-  } else if (tab === 'solved') {
+  if (status === 'pending') {
+    filter = { status: 'pending' };
+  } else if (status === 'in-progress') {
+    filter = { status: 'in-progress' };
+  } else if (status === 'solved') {
     filter = { status: 'solved' };
   }
 
   const skip = (page - 1) * limit;
   const [issues, total] = await Promise.all([
-    Issue.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Issue.find(filter)
+      .populate('userId', 'name userName email image')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
     Issue.countDocuments(filter),
   ]);
 
@@ -67,7 +73,7 @@ const getAllIssuesFromDB = async (tab?: string, page = 1, limit = 10) => {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPage: Math.ceil(total / limit),
     },
   };
 };

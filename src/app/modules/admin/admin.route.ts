@@ -2,6 +2,7 @@ import express from 'express';
 import { USER_ROLES } from '../../../enums/user';
 import { AdminController } from './admin.controller';
 import { AdminValidation } from './admin.validation';
+import { AdminUserController } from './admin-user.controller';
 import { PolicyPageController } from './policy-page.controller';
 import { PolicyPageValidation } from './policy-page.validation';
 import { FaqController } from './faq.controller';
@@ -63,6 +64,15 @@ router.get(
   '/dashboard',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
   DashboardController.getDashboard
+);
+
+// ============================================
+// USERS LIST (admin view)
+// ============================================
+router.get(
+  '/users',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  AdminUserController.getUsers
 );
 
 // ============================================

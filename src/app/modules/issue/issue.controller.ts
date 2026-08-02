@@ -45,23 +45,18 @@ const reportIssue = catchAsync(async (req, res) => {
   });
 });
 
-// GET all issues — used by both user and admin routes
+// GET all issues — ?status=all|pending|in-progress|solved
 const getAllIssues = catchAsync(async (req, res) => {
-  const tab = req.query.tab as string | undefined;
+  const status = req.query.status as string | undefined;
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
-  const result = await IssueService.getAllIssuesFromDB(tab, page, limit);
+  const result = await IssueService.getAllIssuesFromDB(status, page, limit);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: 'Issues retrieved successfully',
     data: result.issues,
-    meta: {
-      total: result.pagination.total,
-      page: result.pagination.page,
-      limit: result.pagination.limit,
-      totalPage: result.pagination.totalPages,
-    },
+    meta: result.pagination,
   });
 });
 
