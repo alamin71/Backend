@@ -14,7 +14,7 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     userName: {
       type: String,
-      default: '',
+      default: '@NOSHOTSPOV',
     },
     role: {
       type: String,

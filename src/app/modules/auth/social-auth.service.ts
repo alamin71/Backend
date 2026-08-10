@@ -65,7 +65,7 @@ const upsertSocialUser = async (data: {
       {
         $setOnInsert: {
           name,
-          userName: '@' + localPart,
+          userName: '@NOSHOTSPOV',
           email,
           role: USER_ROLES.USER,
           status: USER_STATUS.ACTIVE,
