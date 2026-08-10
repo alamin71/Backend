@@ -72,6 +72,9 @@ router.get(
 router.get('/faq', FaqController.getAllFaqs);
 router.get('/faq/:id', FaqController.getFaqById);
 
+// Subscription status
+router.get('/subscription', auth(USER_ROLES.USER), UserController.getSubscriptionStatus);
+
 // Stats
 router.get('/stats', auth(USER_ROLES.USER, USER_ROLES.GUEST), StatsController.getStats);
 

@@ -143,6 +143,16 @@ const verifyEmailChangeOtp = catchAsync(async (req, res) => {
   });
 });
 
+const getSubscriptionStatus = catchAsync(async (req, res) => {
+  const result = await UserService.getSubscriptionStatusFromDB(req.user.id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Subscription status retrieved successfully',
+    data: result,
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -152,4 +162,5 @@ export const UserController = {
   deleteProfile,
   requestEmailChange,
   verifyEmailChangeOtp,
+  getSubscriptionStatus,
 };

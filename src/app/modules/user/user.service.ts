@@ -125,7 +125,7 @@ const verifyUserPassword = async (userId: string, password: string) => {
     throw new AppError(StatusCodes.NOT_FOUND, 'User not found.');
   }
   const userPassword = user.password ?? '';
-  const isPasswordValid = await User.isMatchPassword(password, userPassword);
+  const isPasswordValid = User.isMatchPassword(password, userPassword);
   return isPasswordValid;
 };
 const sendDeleteAccountOtpToDB = async (userId: string) => {
@@ -184,7 +184,7 @@ const verifyDeleteOtpFromDB = async (userId: string, oneTimeCode: number) => {
 // Step 3: Submit reason + delete account (requires deleteToken)
 const deleteUserWithTokenFromDB = async (
   deleteToken: string,
-  reason?: string
+  _reason?: string
 ) => {
   let decoded;
   try {
@@ -288,6 +288,24 @@ const verifyEmailChangeOtpToDB = async (userId: string, otp: number) => {
   return { email: updatedUser?.email, message: 'Email changed successfully' };
 };
 
+const getSubscriptionStatusFromDB = async (userId: string) => {
+  const user = await User.findById(userId).select('userType subscriptionExpireAt');
+  if (!user) {
+    throw new AppError(StatusCodes.NOT_FOUND, "User doesn't exist!");
+  }
+
+  const now = new Date();
+  const isActive =
+    user.userType === 'pro' &&
+    (user.subscriptionExpireAt === null || user.subscriptionExpireAt > now);
+
+  return {
+    userType: user.userType,
+    isActive,
+    subscriptionExpireAt: user.subscriptionExpireAt ?? null,
+  };
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
@@ -298,4 +316,5 @@ export const UserService = {
   deleteUserWithTokenFromDB,
   requestEmailChangeToDB,
   verifyEmailChangeOtpToDB,
+  getSubscriptionStatusFromDB,
 };
