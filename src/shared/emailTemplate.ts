@@ -7,150 +7,129 @@ import {
   IEmailChangeOtp,
 } from '../types/emailTemplate';
 
-const LOGO_URL =
-  'https://bradmarquis-bucket.s3.us-east-1.amazonaws.com/brand_logo.png';
+const BRAND_NAME = 'No Shots';
+const BRAND_COLOR = '#F5C518';
+const BRAND_DARK = '#111111';
+const LOGO_URL = 'https://noshorts-bucket.s3.eu-north-1.amazonaws.com/logo.png';
+
+const header = () => `
+  <div style="background-color:${BRAND_DARK};padding:24px;text-align:center;border-radius:10px 10px 0 0;">
+    <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:50px;object-fit:contain;"
+      onerror="this.style.display='none';document.getElementById('brand-text').style.display='block';" />
+    <span id="brand-text" style="display:none;color:${BRAND_COLOR};font-size:26px;font-weight:bold;letter-spacing:2px;">${BRAND_NAME.toUpperCase()}</span>
+  </div>`;
+
+const footer = () => `
+  <div style="text-align:center;padding:20px;color:#888;font-size:13px;">
+    <p>© ${new Date().getFullYear()} ${BRAND_NAME}. All rights reserved.</p>
+    <p>If you did not request this email, please ignore it.</p>
+  </div>`;
+
+const wrapper = (content: string) => `
+<body style="margin:0;padding:0;background-color:#f4f4f4;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+    ${header()}
+    <div style="padding:32px 40px;">
+      ${content}
+    </div>
+    ${footer()}
+  </div>
+</body>`;
+
+const otpBox = (otp: number | string) =>
+  `<div style="background-color:${BRAND_DARK};color:${BRAND_COLOR};font-size:32px;font-weight:bold;letter-spacing:6px;text-align:center;padding:16px;border-radius:8px;margin:24px 0;">${otp}</div>`;
+
+// ─── Templates ────────────────────────────────────────────────────────────────
 
 const createAccount = (values: ICreateAccount) => {
   const audienceLabel = values.audience === 'admin' ? 'Admin' : 'User';
-  const data = {
+  return {
     to: values.email,
-    subject: `${audienceLabel} account verification OTP`,
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center;">
-        <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-          <h2 style="color: #277E16; font-size: 24px; margin-bottom: 20px;">Welcome ${values.name}!</h2>
-        <div style="text-align: center;">
-            <p style="color: #555; font-size: 14px; font-weight: 600; margin-bottom: 10px;">Account Type: ${audienceLabel}</p>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Use this OTP to verify your account:</p>
-            <div style="background-color: #277E16; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This OTP is valid for 3 minutes.</p>
-            <p style="color: #777; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">If you did not request this, please ignore this email.</p>
-        </div>
-    </div>
-</body>`,
+    subject: `${BRAND_NAME} – Verify your account`,
+    html: wrapper(`
+      <h2 style="color:${BRAND_DARK};margin-top:0;">Welcome, ${values.name}!</h2>
+      <p style="color:#555;font-size:15px;">Account Type: <strong>${audienceLabel}</strong></p>
+      <p style="color:#555;font-size:15px;">Use the OTP below to verify your account:</p>
+      ${otpBox(values.otp)}
+      <p style="color:#888;font-size:13px;">This OTP is valid for <strong>3 minutes</strong>.</p>
+    `),
   };
-  return data;
 };
-const contact = (values: IContact) => {
-  const data = {
-    to: values.email,
-    subject: 'We received your message',
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">      
-      <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-          <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-          <h2 style="color: #277E16; font-size: 24px; margin-bottom: 20px; text-align: center;">Hi ${values.name}, thanks for contacting us.</h2>
-          
-          <p style="color: #555; font-size: 16px; line-height: 1.5; text-align: center;">
-              We have received your message. Our team will respond as soon as possible.
-          </p>
-          
-          <div style="padding: 15px; background-color: #f4f4f4; border-radius: 8px; margin: 20px 0;">
-              <p style="color: #333; font-size: 16px; font-weight: bold;">Your Message Details:</p>
-              <p><strong>Name:</strong> ${values.name}</p>
-              <p><strong>Email:</strong> ${values.email}</p>
-              <p><strong>Subject:</strong> ${values.subject}</p>
-              <br/>
-              <p><strong>Message:</strong> ${values.message}</p>
-          </div>
 
-          <p style="color: #555; font-size: 14px; text-align: center;">
-              If your inquiry is urgent, feel free to reach out to us directly at 
-              <a href="mailto:support@yourdomain.com" style="color: #277E16; text-decoration: none;">support@yourdomain.com</a>.
-          </p>
-
-          <p style="color: #555; font-size: 14px; text-align: center; margin-top: 20px;">
-              Best Regards, <br/>
-              Support Team
-          </p>
-      </div>
-  </body>`,
-  };
-  return data;
-};
 const resetPassword = (values: IResetPassword) => {
   const audienceLabel = values.audience === 'admin' ? 'Admin' : 'User';
-  const data = {
+  return {
     to: values.email,
-    subject: `${audienceLabel} reset password OTP`,
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-    <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-        <div style="text-align: center;">
-      <p style="color: #555; font-size: 14px; font-weight: 600; margin-bottom: 10px;">Account Type: ${audienceLabel}</p>
-      <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Use this OTP to reset your password:</p>
-            <div style="background-color: #277E16; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-      <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This OTP is valid for 3 minutes.</p>
-        <p style="color: #b9b4b4; font-size: 16px; line-height: 1.5; margin-bottom: 20px;text-align:left">If you did not request a password reset, you can safely ignore this email.</p>
-        </div>
-    </div>
-</body>`,
+    subject: `${BRAND_NAME} – Reset your password`,
+    html: wrapper(`
+      <h2 style="color:${BRAND_DARK};margin-top:0;">Password Reset</h2>
+      <p style="color:#555;font-size:15px;">Account Type: <strong>${audienceLabel}</strong></p>
+      <p style="color:#555;font-size:15px;">Use the OTP below to reset your password:</p>
+      ${otpBox(values.otp)}
+      <p style="color:#888;font-size:13px;">This OTP is valid for <strong>3 minutes</strong>.</p>
+      <p style="color:#888;font-size:13px;">If you did not request a password reset, you can safely ignore this email.</p>
+    `),
   };
-  return data;
-};
-const resetPasswordByUrl = (values: IResetPasswordByEmail) => {
-  const data = {
-    to: values.email,
-    subject: 'Password reset link',
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-      <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-        <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-        <div style="text-align: center;">
-          <h2 style="color: #333;">Reset Your Password</h2>
-          <p style="color: #555; font-size: 16px; line-height: 1.5;">We received a request to reset your password. Click the button below to reset it:</p>
-          <a href="${values.resetUrl}" target="_blank" style="display: inline-block; background-color: #277E16; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-size: 18px; margin: 20px auto;">Reset Password</a>
-          <p style="color: #555; font-size: 16px; line-height: 1.5; margin-top: 20px;">If you didn’t request this, you can ignore this email.</p>
-          <p style="color: #b9b4b4; font-size: 14px;">This link will expire in 10 minutes.</p>
-        </div>
-      </div>
-    </body>`,
-  };
-  return data;
 };
 
-const contactFormTemplate = (values: IHelpContact) => {
-  const data = {
-    to: values.email,
-    subject: 'Thanks, we received your request',
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-    <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-        <div style="text-align: center;">
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Hello ${values.name},</p>
-      <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Thanks for contacting us. We have received your message:</p>
-            <div style="background-color: #f1f1f1; padding: 15px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 20px;">
-                <p style="color: #555; font-size: 16px; line-height: 1.5;">"${values.message}"</p>
-            </div>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">We will get back to you as soon as possible. Below are the details you provided:</p>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 10px;">Email: ${values.email}</p>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 10px;">Phone: ${values.phone}</p>
-            <p style="color: #b9b4b4; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">If you need immediate assistance, please feel free to contact us directly at our support number.</p>
-        </div>
+const resetPasswordByUrl = (values: IResetPasswordByEmail) => ({
+  to: values.email,
+  subject: `${BRAND_NAME} – Reset your password`,
+  html: wrapper(`
+    <h2 style="color:${BRAND_DARK};margin-top:0;">Reset Your Password</h2>
+    <p style="color:#555;font-size:15px;">We received a request to reset your password. Click the button below:</p>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${values.resetUrl}" target="_blank"
+        style="background-color:${BRAND_COLOR};color:${BRAND_DARK};text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:bold;">
+        Reset Password
+      </a>
     </div>
-</body>`,
-  };
-  return data;
-};
+    <p style="color:#888;font-size:13px;">This link will expire in <strong>10 minutes</strong>.</p>
+    <p style="color:#888;font-size:13px;">If you didn't request this, you can ignore this email.</p>
+  `),
+});
 
-const emailChangeOtp = (values: IEmailChangeOtp) => {
-  const data = {
-    to: values.newEmail,
-    subject: 'Email change verification OTP',
-    html: `<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; margin: 50px; padding: 20px; color: #555;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center;">
-        <img src="${LOGO_URL}" alt="Logo" style="display: block; margin: 0 auto 20px; width:150px" />
-        <h2 style="color: #277E16; font-size: 24px; margin-bottom: 20px;">Email Change Verification</h2>
-        <div style="text-align: center;">
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Hi ${values.name},</p>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">Use this OTP to verify your new email address:</p>
-            <div style="background-color: #277E16; width: 120px; padding: 10px; text-align: center; border-radius: 8px; color: #fff; font-size: 25px; letter-spacing: 2px; margin: 20px auto;">${values.otp}</div>
-            <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">This OTP is valid for 5 minutes.</p>
-            <p style="color: #777; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">If you did not request this email change, please ignore this email and your account will remain unchanged.</p>
-        </div>
+const contact = (values: IContact) => ({
+  to: values.email,
+  subject: `${BRAND_NAME} – We received your message`,
+  html: wrapper(`
+    <h2 style="color:${BRAND_DARK};margin-top:0;">Hi ${values.name},</h2>
+    <p style="color:#555;font-size:15px;">Thanks for contacting us. We have received your message and our team will respond as soon as possible.</p>
+    <div style="background:#f8f8f8;border-left:4px solid ${BRAND_COLOR};padding:16px;border-radius:4px;margin:20px 0;">
+      <p style="margin:4px 0;color:#333;"><strong>Subject:</strong> ${values.subject}</p>
+      <p style="margin:4px 0;color:#333;"><strong>Message:</strong> ${values.message}</p>
     </div>
-</body>`,
-  };
-  return data;
-};
+    <p style="color:#888;font-size:13px;">If your inquiry is urgent, please contact us at <a href="mailto:noshots05@gmail.com" style="color:${BRAND_COLOR};">noshots05@gmail.com</a>.</p>
+  `),
+});
+
+const contactFormTemplate = (values: IHelpContact) => ({
+  to: values.email,
+  subject: `${BRAND_NAME} – We received your request`,
+  html: wrapper(`
+    <h2 style="color:${BRAND_DARK};margin-top:0;">Hello ${values.name},</h2>
+    <p style="color:#555;font-size:15px;">Thanks for reaching out. We have received your message:</p>
+    <div style="background:#f8f8f8;border-left:4px solid ${BRAND_COLOR};padding:16px;border-radius:4px;margin:20px 0;">
+      <p style="color:#555;font-size:15px;">"${values.message}"</p>
+    </div>
+    <p style="color:#555;font-size:14px;">Email: ${values.email}</p>
+    <p style="color:#555;font-size:14px;">Phone: ${values.phone}</p>
+    <p style="color:#888;font-size:13px;">We will get back to you as soon as possible.</p>
+  `),
+});
+
+const emailChangeOtp = (values: IEmailChangeOtp) => ({
+  to: values.newEmail,
+  subject: `${BRAND_NAME} – Email change verification`,
+  html: wrapper(`
+    <h2 style="color:${BRAND_DARK};margin-top:0;">Email Change Verification</h2>
+    <p style="color:#555;font-size:15px;">Hi ${values.name},</p>
+    <p style="color:#555;font-size:15px;">Use the OTP below to verify your new email address:</p>
+    ${otpBox(values.otp)}
+    <p style="color:#888;font-size:13px;">This OTP is valid for <strong>5 minutes</strong>.</p>
+    <p style="color:#888;font-size:13px;">If you did not request this change, please ignore this email — your account will remain unchanged.</p>
+  `),
+});
 
 export const emailTemplate = {
   createAccount,
