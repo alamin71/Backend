@@ -14,9 +14,9 @@ const LOGO_URL = 'https://noshorts-bucket.s3.eu-north-1.amazonaws.com/logo.png';
 
 const header = () => `
   <div style="background-color:${BRAND_DARK};padding:24px;text-align:center;border-radius:10px 10px 0 0;">
-    <img src="${LOGO_URL}" alt="${BRAND_NAME}" style="height:50px;object-fit:contain;"
-      onerror="this.style.display='none';document.getElementById('brand-text').style.display='block';" />
-    <span id="brand-text" style="display:none;color:${BRAND_COLOR};font-size:26px;font-weight:bold;letter-spacing:2px;">${BRAND_NAME.toUpperCase()}</span>
+    <img src="${LOGO_URL}" alt="${BRAND_NAME}" width="120" height="50"
+      style="display:block;margin:0 auto 8px;object-fit:contain;" />
+    <span style="color:${BRAND_COLOR};font-size:22px;font-weight:bold;letter-spacing:3px;display:block;">${BRAND_NAME.toUpperCase()}</span>
   </div>`;
 
 const footer = () => `
