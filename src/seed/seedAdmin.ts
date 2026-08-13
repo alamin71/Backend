@@ -19,23 +19,11 @@ const adminData = {
 // Function to seed admin user
 const seedAdmin = async () => {
   try {
-    // Check if admin already exists
-    const existingAdmin = await User.findOne({
-      email: adminData.email,
-    });
+    // Delete all existing SUPER_ADMIN users, then recreate fresh
+    await User.deleteMany({ role: USER_ROLES.SUPER_ADMIN });
+    logger.info(colors.yellow('🗑️  Old super admin(s) removed.'));
 
-    if (existingAdmin) {
-      logger.info(
-        colors.yellow('ℹ️ Admin user already exists. Skipping creation...')
-      );
-      return;
-    }
-
-    // Do NOT hash here - let the model pre-save hook handle it
-    const adminUser = { ...adminData };
-
-    // Create only the admin user
-    await User.create(adminUser);
+    await User.create({ ...adminData });
     logger.info(colors.green('✨ Admin user created successfully ✨'));
   } catch (err) {
     logger.error(colors.red('💥 Error creating admin user: 💥'), err);
