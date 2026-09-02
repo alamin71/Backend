@@ -120,12 +120,14 @@ export const getStatsFromDB = async (
   };
 
   // Build grips stat
-  const gd = gripsDistRaw[0] ?? { grip15: 0, grip20: 0, grip30: 0, grip60: 0 };
+  const gd = gripsDistRaw[0] ?? { grip15: 0, grip20: 0, grip30: 0, grip60: 0, grip90:0, grip120:0  };
   const distribution = [
     { duration: '15s', count: gd.grip15 },
     { duration: '20s', count: gd.grip20 },
     { duration: '30s', count: gd.grip30 },
     { duration: '60s', count: gd.grip60 },
+    { duration: '90s', count: gd.grip90 },
+    { duration: '120s', count: gd.grip120 },
   ];
   const sorted = [...distribution].sort((a, b) => b.count - a.count);
   const gripsStat = {
