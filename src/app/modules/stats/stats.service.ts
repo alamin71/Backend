@@ -92,7 +92,27 @@ export const getStatsFromDB = async (
               ],
             },
           },
-          grip60: { $sum: { $cond: [{ $gt: ['$grips.duration', 30] }, 1, 0] } },
+          grip60: {
+            $sum: {
+              $cond: [
+                { $and: [{ $gt: ['$grips.duration', 30] }, { $lte: ['$grips.duration', 60] }] },
+                1, 0,
+              ],
+            },
+          },
+          grip90: {
+            $sum: {
+              $cond: [
+                { $and: [{ $gt: ['$grips.duration', 60] }, { $lte: ['$grips.duration', 90] }] },
+                1, 0,
+              ],
+            },
+          },
+          grip120: {
+            $sum: {
+              $cond: [{ $gt: ['$grips.duration', 90] }, 1, 0],
+            },
+          },
         },
       },
     ]),
