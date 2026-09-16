@@ -1,6 +1,7 @@
 import { Session } from './session.model';
 import AppError from '../../../errors/AppError';
 import { StatusCodes } from 'http-status-codes';
+import { checkAndSendGripNotification } from '../notification/grip-notification.service';
 
 const GUEST_DAILY_LIMIT = 10;   // total free tier allowance
 const GUEST_SESSION_LIMIT = 5;  // lock-out threshold for guests
@@ -60,6 +61,13 @@ const createSessionSummary = async (payload: any) => {
   if (guestDeviceId) {
     const guestStatus = await getGuestGripStatus(guestDeviceId);
     return { ...session.toObject(), guestStatus };
+  }
+
+  // Check and send grip push notifications for logged-in users
+  if (user) {
+    checkAndSendGripNotification(user.toString()).catch(() => {
+      // Fire-and-forget — notification failure should not break session save
+    });
   }
 
   return session;

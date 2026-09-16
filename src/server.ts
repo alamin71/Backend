@@ -11,6 +11,7 @@ import { socketHelper } from './helpers/socketHelper';
 import { setupProcessHandlers } from './DB/processHandlers';
 import { setupSecurity } from './DB/security';
 import { setupCluster } from './DB/cluster';
+import { startGripReminderCron } from './helpers/gripReminderCron';
 import dns from 'dns';
 
 // Define the types for the servers
@@ -104,6 +105,9 @@ export async function startServer() {
         `♻️  Socket attached to HTTP server on http://${ipAddress}:${currentHttpPort}`
       )
     );
+
+    // Start grip reminder cron job
+    startGripReminderCron();
   } catch (error) {
     logger.error(colors.red('Failed to start server'), error);
     process.exit(1);

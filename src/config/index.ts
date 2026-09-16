@@ -66,6 +66,7 @@ export default {
   revenuecat: {
     webhook_secret: process.env.REVENUECAT_WEBHOOK_SECRET,
   },
+  cron_test_mode: process.env.CRON_TEST_MODE || 'false',
   aws: {
     access_key_id: process.env.AWS_ACCESS_KEY_ID,
     secret_access_key: process.env.AWS_SECRET_ACCESS_KEY,

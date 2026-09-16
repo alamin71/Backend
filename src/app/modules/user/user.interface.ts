@@ -15,6 +15,7 @@ export type IUser = {
   userType: 'free' | 'pro';
   os?: 'ios' | 'android' | '';
   lastSeen?: Date | null;
+  gripsLimitHitAt?: Date | null;
   subscriptionExpireAt: Date | null;
   authentication?: {
     isResetPassword: boolean;

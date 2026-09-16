@@ -62,6 +62,10 @@ const userSchema = new Schema<IUser, UserModel>(
       type: Date,
       default: null,
     },
+    gripsLimitHitAt: {
+      type: Date,
+      default: null,
+    },
     stripeCustomerId: {
       type: String,
       default: '',
