@@ -53,8 +53,21 @@ const getByGuest = catchAsync(async (req, res) => {
   });
 });
 
+const getGuestStatus = catchAsync(async (req, res) => {
+  const deviceId = resolveSingleParam(req.query.deviceId as string);
+  if (!deviceId) throw new Error('deviceId query param is required');
+  const data = await SessionService.getGuestGripStatus(deviceId);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Guest grip status retrieved',
+    data,
+  });
+});
+
 export const SessionController = {
   createSession,
   getByUser,
   getByGuest,
+  getGuestStatus,
 };

@@ -7,6 +7,9 @@ const router = express.Router();
 // Create session summary (public — can include deviceId or authenticated user)
 router.post('/', SessionController.createSession);
 
+// Guest grip status — ?deviceId=xxx (no auth needed)
+router.get('/guest-status', SessionController.getGuestStatus);
+
 // Get sessions for a user
 router.get('/user/:userId', SessionController.getByUser);
 
