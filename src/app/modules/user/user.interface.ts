@@ -16,6 +16,7 @@ export type IUser = {
   os?: 'ios' | 'android' | '';
   lastSeen?: Date | null;
   gripsLimitHitAt?: Date | null;
+  gripReminderSentAt?: Date | null;
   subscriptionExpireAt: Date | null;
   authentication?: {
     isResetPassword: boolean;

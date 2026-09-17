@@ -66,6 +66,10 @@ const userSchema = new Schema<IUser, UserModel>(
       type: Date,
       default: null,
     },
+    gripReminderSentAt: {
+      type: Date,
+      default: null,
+    },
     stripeCustomerId: {
       type: String,
       default: '',

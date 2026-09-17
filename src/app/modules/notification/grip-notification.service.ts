@@ -40,8 +40,8 @@ export const checkAndSendGripNotification = async (userId: string) => {
 
   // Limit hit at 10th grip
   if (gripsToday >= FREE_TIER_LIMIT) {
-    // Save when limit was hit (for 6-hour reminder cron)
-    await User.findByIdAndUpdate(userId, { gripsLimitHitAt: new Date() });
+    // Save when limit was hit and reset reminder flag (for one-time 6h reminder)
+    await User.findByIdAndUpdate(userId, { gripsLimitHitAt: new Date(), gripReminderSentAt: null });
 
     await NotificationService.sendNotificationToUser(userId, {
       title: 'Daily Grip Limit Reached',
@@ -52,14 +52,19 @@ export const checkAndSendGripNotification = async (userId: string) => {
   }
 };
 
-// Cron job: remind users who hit the limit — every 6 hours (60s for testing)
+// Cron job: runs every minute, sends ONE reminder exactly 6 hours after limit was hit
 export const sendGripLimitReminders = async () => {
+  const now = new Date();
   const todayUTC = new Date();
   todayUTC.setUTCHours(0, 0, 0, 0);
 
-  // Find users who hit the limit today and have FCM token
+  // Window: hit between 6h1m ago and 5h59m ago (1-minute cron window)
+  const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+  const sixHoursAgoMinus1Min = new Date(sixHoursAgo.getTime() - 60 * 1000);
+
   const users = await User.find({
-    gripsLimitHitAt: { $gte: todayUTC },
+    gripsLimitHitAt: { $gte: sixHoursAgoMinus1Min, $lte: sixHoursAgo },
+    gripReminderSentAt: null, // not yet sent
     fcmToken: { $exists: true, $ne: '' },
   }).select('_id fcmToken');
 
@@ -70,5 +75,7 @@ export const sendGripLimitReminders = async () => {
       type: 'grip_limit_reminder',
       data: {},
     });
+    // Mark reminder as sent so it never fires again for this limit hit
+    await User.findByIdAndUpdate(user._id, { gripReminderSentAt: now });
   }
 };
